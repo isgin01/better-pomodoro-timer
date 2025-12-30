@@ -1,99 +1,106 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { Plugin } from "obsidian"
 
-// Remember to rename these classes and interfaces!
+import {
+	DEFAULT_SETTINGS,
+	type PluginSettings,
+	BetterPomodoroSettingsTab,
+} from "./settings"
+import { Timer } from "./timer"
+import * as statusBar from "./status-bar"
+import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "./custom-view"
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class BetterPomodoroPlugin extends Plugin {
+	settings: PluginSettings
+	timer: Timer
+	statusBarItem: HTMLElement
+	customView: CustomView
 
 	async onload() {
-		await this.loadSettings();
+		await this.loadSettings()
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+		this.timer = new Timer(this.settings)
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+		this.registerView(PLUGIN_CUSTOM_VIEW_ID, (leaf) => {
+			this.customView = new CustomView(leaf, this.timer)
+			return this.customView
+		})
 
-		// This adds a simple command that can be triggered anywhere
+		// this.loadCustomView()
+
+		this.statusBarItem = this.addStatusBarItem()
+		statusBar.build(this.statusBarItem, this.timer)
+		statusBar.alterVisibility(
+			this.settings.showStatusBar,
+			this.statusBarItem,
+		)
+
 		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
+			id: "toggle",
+			name: "Toggle",
 			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
+				this.timer.toggle()
+			},
+		})
+
 		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
+			id: "switch",
+			name: "Switch",
+			callback: () => {
+				this.timer.switch()
+			},
+		})
+
 		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+			id: "reset",
+			name: "Reset",
+			callback: () => {
+				this.timer.reset()
+			},
+		})
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		this.addSettingTab(new BetterPomodoroSettingsTab(this.app, this))
 	}
 
 	onunload() {
+		this.timer.destroy()
 	}
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+	private async loadSettings() {
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<PluginSettings>,
+		)
+	}
+
+	loadCustomView() {
+		if (this.settings.showCustomView) {
+			var { workspace } = this.app
+			let leaves = workspace.getLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
+			if (!leaves.length) {
+				let leaf = workspace.getRightLeaf(false)
+				// TODO: is it ok to put ? here
+				leaf?.setViewState({
+					type: PLUGIN_CUSTOM_VIEW_ID,
+					// TODO: what does "active" really do?
+					// active: true,
+				})
+			}
+		}
+	}
+
+	hideCustomView() {
+		var { workspace } = this.app
+		// var leaves = workspace.getLeavesOfType(PLUGIN_CUSTOM_VIEW_ID);
+		// leaves.map((l) => { l.detach() })
+		workspace.detachLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
+	}
+
+	reflectSettingsChange(cb: (ctx: BetterPomodoroPlugin) => void) {
+		cb(this)
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
+		await this.saveData(this.settings)
 	}
 }
