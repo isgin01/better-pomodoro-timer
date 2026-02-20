@@ -14,7 +14,8 @@ export default class BetterPomodoroPlugin extends Plugin {
 		this.timer = new Timer(this.settings);
 
 		const statusBarItemEl = this.addStatusBarItem();
-		this.statusBar = new StatusBar(statusBarItemEl, this.timer);
+		// TODO: passing the entire timer object volates the SRP
+		this.statusBar = new StatusBar(statusBarItemEl, this.timer, "99:99");
 
 		this.addCommand({
 			id: "toggle",

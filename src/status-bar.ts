@@ -4,17 +4,28 @@ export default class StatusBar {
 	private element: HTMLElement;
 	private timer: Timer;
 
-	constructor(element: HTMLElement, timer: Timer) {
+	constructor(element: HTMLElement, timer: Timer, initialTime: string) {
 		this.element = element;
 		this.timer = timer;
 
-		// TODO: Move the component to some other place maybe?
+		this.element.innerHTML = this.constructInnerHTML(initialTime);
 		this.element.className = `${element.className} mod-clickable`;
-		this.element.innerHTML = `<span>${timer.timeInSecondsLeft}</span>`;
 		this.element.addEventListener("click", (_) => {
 			this.timer.toggle();
 		});
+
+		this.timer.registerOnTickHandler(() => {
+			this.element.innerHTML = this.constructInnerHTML(
+				this.timer.timeInSecondsLeft,
+			);
+		});
 	}
 
-	destroy() { }
+	destroy() {
+		// TODO: doesn't anything need to be destroyed?
+	}
+
+	private constructInnerHTML(time: string | number) {
+		return `<span>${time}</span>`;
+	}
 }

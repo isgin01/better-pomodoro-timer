@@ -1,12 +1,13 @@
-export type stopMessageToWorker = {
+export type StopMessageToWorker = {
 	action: "stop";
 };
 
-export type startMessageToWorker = {
+export type StartMessageToWorker = {
 	action: "start";
-	durationInSeconds: number;
 };
 
-export type messageToWorker = startMessageToWorker | stopMessageToWorker;
+export type MessageToWorker = StartMessageToWorker | StopMessageToWorker;
 
-export type messageFromWorker = "finished";
+export type MessageFromWorker = "finished";
+
+export type Mode = "work" | "break";

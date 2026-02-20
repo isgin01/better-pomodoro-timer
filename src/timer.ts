@@ -1,21 +1,41 @@
 import Worker from "clock.worker";
 import { BetterPomodoroPluginSettings } from "settings";
 import * as utils from "utils";
-import type { messageToWorker } from "types";
+import type { Mode } from "types";
 
 export default class Timer {
 	public timeInSecondsLeft: number;
 	public isRunning: boolean;
 
-	private clockWorker: Worker;
+	private onTickHanders: ((newTime: string) => void)[];
+	// TODO: what if we use setInterval here instead of a worker?
+	// private clockWorker: Worker;
+	private clock: NodeJS.Timeout | undefined;
 	private settings: BetterPomodoroPluginSettings;
+	private mode: Mode;
 
 	constructor(settings: BetterPomodoroPluginSettings) {
-		this.timeInSecondsLeft = this.calculateTimeLeft();
+		// TODO: rewrite the comment
+		// Assign settings before all other props because it can used
+		// in order to load/assign the other props
+		this.settings = settings;
+
+		// public props
 		this.isRunning = false;
 
-		this.clockWorker = new Worker();
-		this.settings = settings;
+		// private props
+		// this.timeInSecondsLeft = this.calculateTimeLeft();
+		// TODO: is it really okay to just assign it randomly
+		this.mode = "work";
+
+		this.timeInSecondsLeft = this.getNextTimePeriodDurationInSeconds();
+
+		// Add a handler that changes all
+		this.onTickHanders = [
+			() => {
+				this.timeInSecondsLeft -= 1;
+			},
+		];
 	}
 
 	toggle(): void {
@@ -26,58 +46,88 @@ export default class Timer {
 		}
 	}
 
-	private updateTimeLeftInSeconds(): void {
-		this.timeInSecondsLeft -= 1;
+	destroy(): void {
+		this.pause();
 	}
 
-	private calculateTimeLeft(): number {
-		let workDurationParsed = parseInt(this.settings.workDuration);
-		return workDurationParsed;
+	registerOnTickHandler(handler: (newTime: string) => void): void {
+		this.onTickHanders.push(handler);
+	}
+
+	private getNextTimePeriodDurationInSeconds(): number {
+		switch (this.mode) {
+			case "work":
+				var nextModeDurationMinutesUnparsed =
+					this.settings.workDurationInMinutes;
+			case "break":
+				var nextModeDurationMinutesUnparsed =
+					this.settings.breakDurationInMinutes;
+		}
+
+		let nextModeDurationMinutesParsed = Number(
+			nextModeDurationMinutesUnparsed,
+		);
+		let nextModeDurationSeconds = nextModeDurationMinutesParsed * 60;
+		return nextModeDurationSeconds;
+	}
+
+	private switchMode(): void {
+		// TODO: there must be a more elegant way to do it
+		const nextMode = this.mode == "work" ? "break" : "work";
+		this.mode = nextMode;
 	}
 
 	private start(): void {
 		this.isRunning = true;
 
-		let durationInSeconds = this.getDuration();
-		let message: messageToWorker = {
-			action: "start",
-			durationInSeconds: durationInSeconds,
-		};
+		const oneSecondInMilliseconds = 1000;
 
-		this.clockWorker.postMessage(message);
+		this.clock = setInterval(() => {
+			this.tick();
+		}, oneSecondInMilliseconds);
+
+		// TODO: should I write is or has?
+		let notificationText = "Pomodoro timer has started";
+		this.notify(notificationText);
 	}
 
-	private getDuration(): number {
-		// TODO: get break duration as well
-		let durationString = this.settings.workDuration;
-		let durationInMinutes = parseInt(durationString);
-		return durationInMinutes;
+	private tick(): void {
+		console.log("tick");
+
+		const humanFriendlyTimeRepresentation =
+			utils.convertSecondsToHumanFriendlyRepresentation(
+				this.timeInSecondsLeft,
+			);
+
+		// TODO: this code is not clear
+
+		// Execute every handler
+		this.onTickHanders.forEach((handler) =>
+			handler(humanFriendlyTimeRepresentation),
+		);
+	}
+
+	private pause(): void {
+		// TODO: add time left saving
+		this.stop();
 	}
 
 	private stop(): void {
 		this.isRunning = false;
-		let message: messageToWorker = {
-			action: "stop",
-		};
-		this.clockWorker.postMessage(message);
+
+		clearInterval(this.clock);
+
+		let notificationText = "Pomodoro timer has stopped";
+		this.notify(notificationText);
 	}
 
-	private pause(): void { }
-
-	private notify(): void {
+	private notify(notificationText: string): void {
 		// TODO: Add sound to both system and obsidian notifications
-
-		let notificationText = "Time is up";
 
 		if (this.settings.areSystemNotificationsPreferred) {
 			utils.showSystemNotification(notificationText);
 		} else {
 			utils.showObsidianNotification(notificationText);
 		}
-	}
-
-	destroy(): void {
-		this.pause();
-		this.clockWorker.terminate();
 	}
 }
