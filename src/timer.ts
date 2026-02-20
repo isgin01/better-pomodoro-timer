@@ -1,4 +1,3 @@
-import Worker from "clock.worker";
 import { BetterPomodoroPluginSettings } from "settings";
 import * as utils from "utils";
 import type { Mode } from "types";
@@ -112,9 +111,11 @@ export default class Timer {
 				this.timeLeftSeconds,
 			);
 
-		// TODO: this code is not clear
+		// TODO: the name hanlder is unclear
 
 		// Execute every handler
+		console.log(this.onTickHandlers);
+		// TODO: it's not good that it passes this arg to *every* handler
 		this.onTickHandlers.forEach((handler) =>
 			handler(humanFriendlyTimeRepresentation),
 		);

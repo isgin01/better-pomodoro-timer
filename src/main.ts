@@ -4,6 +4,8 @@ import * as Settings from "./settings";
 import Timer from "./timer";
 import StatusBar from "./status-bar";
 
+// TODO: update all deps step by step
+
 export default class BetterPomodoroPlugin extends Plugin {
 	settings: Settings.BetterPomodoroPluginSettings;
 	timer: Timer;

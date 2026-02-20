@@ -14,11 +14,13 @@ export default class StatusBar {
 			this.timer.toggle();
 		});
 
-		this.timer.registerOnTickHandler(() => {
-			this.element.innerHTML = this.constructInnerHTML(
-				this.timer.timeLeftSeconds,
-			);
-		});
+		this.timer.registerOnTickHandler(
+			(humanFriendlyTimeRepresenation: string) => {
+				this.element.innerHTML = this.constructInnerHTML(
+					humanFriendlyTimeRepresenation,
+				);
+			},
+		);
 	}
 
 	destroy() {
