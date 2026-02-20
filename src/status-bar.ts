@@ -16,7 +16,7 @@ export default class StatusBar {
 
 		this.timer.registerOnTickHandler(() => {
 			this.element.innerHTML = this.constructInnerHTML(
-				this.timer.timeInSecondsLeft,
+				this.timer.timeLeftSeconds,
 			);
 		});
 	}

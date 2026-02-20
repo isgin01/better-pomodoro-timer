@@ -4,10 +4,10 @@ import * as utils from "utils";
 import type { Mode } from "types";
 
 export default class Timer {
-	public timeInSecondsLeft: number;
+	public timeLeftSeconds: number;
 	public isRunning: boolean;
 
-	private onTickHanders: ((newTime: string) => void)[];
+	private onTickHandlers: ((newTime: string) => void)[];
 	// TODO: what if we use setInterval here instead of a worker?
 	// private clockWorker: Worker;
 	private clock: NodeJS.Timeout | undefined;
@@ -28,12 +28,18 @@ export default class Timer {
 		// TODO: is it really okay to just assign it randomly
 		this.mode = "work";
 
-		this.timeInSecondsLeft = this.getNextTimePeriodDurationInSeconds();
+		this.timeLeftSeconds = this.getModeDurationSeconds();
 
 		// Add a handler that changes all
-		this.onTickHanders = [
+		this.onTickHandlers = [
+			// TODO: should I merge this into a single function
 			() => {
-				this.timeInSecondsLeft -= 1;
+				if (this.timeLeftSeconds == 0) {
+					this.timeIsUp();
+				}
+			},
+			() => {
+				this.timeLeftSeconds -= 1;
 			},
 		];
 	}
@@ -51,24 +57,31 @@ export default class Timer {
 	}
 
 	registerOnTickHandler(handler: (newTime: string) => void): void {
-		this.onTickHanders.push(handler);
+		this.onTickHandlers.push(handler);
 	}
 
-	private getNextTimePeriodDurationInSeconds(): number {
+	private timeIsUp(): void {
+		this.switchMode();
+		this.stop();
+	}
+
+	private getModeDurationSeconds(): number {
+		// TODO: kinda shortened names, see if it made sense
 		switch (this.mode) {
 			case "work":
-				var nextModeDurationMinutesUnparsed =
+				var durationMinutesUnparsed =
 					this.settings.workDurationInMinutes;
 			case "break":
-				var nextModeDurationMinutesUnparsed =
+				var durationMinutesUnparsed =
 					this.settings.breakDurationInMinutes;
 		}
 
-		let nextModeDurationMinutesParsed = Number(
-			nextModeDurationMinutesUnparsed,
-		);
-		let nextModeDurationSeconds = nextModeDurationMinutesParsed * 60;
-		return nextModeDurationSeconds;
+		// TODO: see if it makes sense to create a helper func that would
+		// convert string minutes to integer seconds
+		let durationMinutes = Number(durationMinutesUnparsed);
+		let durationSeconds = durationMinutes * 60;
+
+		return durationSeconds;
 	}
 
 	private switchMode(): void {
@@ -96,13 +109,13 @@ export default class Timer {
 
 		const humanFriendlyTimeRepresentation =
 			utils.convertSecondsToHumanFriendlyRepresentation(
-				this.timeInSecondsLeft,
+				this.timeLeftSeconds,
 			);
 
 		// TODO: this code is not clear
 
 		// Execute every handler
-		this.onTickHanders.forEach((handler) =>
+		this.onTickHandlers.forEach((handler) =>
 			handler(humanFriendlyTimeRepresentation),
 		);
 	}
