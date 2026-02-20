@@ -27,10 +27,19 @@ export function showObsidianNotification(text: string) {
 export function convertSecondsToHumanFriendlyRepresentation(
 	secondsTotal: number,
 ) {
-	// TODO: make it more elegant
-	const hours = secondsTotal / 3600;
-	const minutes = (secondsTotal % 3600) / 60;
 	const secondsLeft = secondsTotal % 60;
-	let humanFriendlyRepresentation = `${hours}:${minutes}:${secondsLeft}`;
+	const minutesTotal = (secondsTotal - secondsLeft) / 60;
+	const minutesLeft = minutesTotal % 60;
+	const hoursTotal = (minutesTotal - minutesLeft) / 60;
+
+	const paddedTODO = [hoursTotal, minutesLeft, secondsLeft].map(
+		function padTimeUnits(timeUnit: number) {
+			let convertedTimeUnit = String(timeUnit);
+			let paddedConvertedTimeUnit = convertedTimeUnit.padStart(2, "00");
+			return paddedConvertedTimeUnit;
+		},
+	);
+
+	let humanFriendlyRepresentation = paddedTODO.join(":");
 	return humanFriendlyRepresentation;
 }
