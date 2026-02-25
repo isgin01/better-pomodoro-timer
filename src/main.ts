@@ -15,10 +15,10 @@ export default class BetterPomodoroPlugin extends Plugin {
 		await this.loadSettings();
 		this.timer = new Timer(this.settings);
 
+		const hfTimeLeft = this.timer.getHFTimeLeft();
 		const statusBarItemEl = this.addStatusBarItem();
 		// TODO: passing the entire timer object volates the SRP
-		// TODO: do something with the "99:99"
-		this.statusBar = new StatusBar(statusBarItemEl, this.timer, "99:99");
+		this.statusBar = new StatusBar(statusBarItemEl, this.timer, hfTimeLeft);
 
 		this.addCommand({
 			id: "toggle",
@@ -29,9 +29,17 @@ export default class BetterPomodoroPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "switch",
+			name: "Switch Better Pomodoro Timer Mode",
+			callback: () => {
+				this.timer.switch();
+			},
+		});
+
+		this.addCommand({
 			id: "reset",
 			name: "Reset Better Pomodoro Timer",
-			callback: () => { },
+			callback: () => {},
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin

@@ -27,7 +27,7 @@ export default class StatusBar {
 		// TODO: doesn't anything need to be destroyed?
 	}
 
-	private constructInnerHTML(time: string | number) {
+	private constructInnerHTML(time: string) {
 		return `<span>${time}</span>`;
 	}
 }

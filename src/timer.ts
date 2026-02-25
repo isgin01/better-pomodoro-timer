@@ -29,18 +29,7 @@ export default class Timer {
 
 		this.timeLeftSeconds = this.getModeDurationSeconds();
 
-		// Add a handler that changes all
-		this.onTickHandlers = [
-			// TODO: should I merge this into a single function
-			() => {
-				if (this.timeLeftSeconds == 0) {
-					this.timeIsUp();
-				}
-			},
-			() => {
-				this.timeLeftSeconds -= 1;
-			},
-		];
+		this.onTickHandlers = [];
 	}
 
 	toggle(): void {
@@ -51,6 +40,17 @@ export default class Timer {
 		}
 	}
 
+	switch(): void {
+		stop();
+		this.switchMode();
+	}
+
+	reset(): void {
+		this.stop();
+		let currentModeDuration = this.getModeDurationSeconds();
+		this.timeLeftSeconds = currentModeDuration;
+	}
+
 	destroy(): void {
 		this.pause();
 	}
@@ -59,9 +59,10 @@ export default class Timer {
 		this.onTickHandlers.push(handler);
 	}
 
-	private timeIsUp(): void {
-		this.switchMode();
-		this.stop();
+	getHFTimeLeft(): string {
+		let secondsLeft = this.getModeDurationSeconds();
+		let HFTime = utils.sToHF(secondsLeft);
+		return HFTime;
 	}
 
 	private getModeDurationSeconds(): number {
@@ -104,21 +105,23 @@ export default class Timer {
 	}
 
 	private tick(): void {
-		console.log("tick");
+		this.timeLeftSeconds -= 1;
 
-		const humanFriendlyTimeRepresentation =
-			utils.convertSecondsToHumanFriendlyRepresentation(
-				this.timeLeftSeconds,
-			);
+		// Run onTickHandlers
+		// TODO: see if the shortened names are good, check if there are more traditional shortcuts
+		const HFTime = utils.sToHF(this.timeLeftSeconds);
+		this.onTickHandlers.forEach((onTickHandler) => onTickHandler(HFTime));
 
-		// TODO: the name hanlder is unclear
+		if (this.timeLeftSeconds == 0) {
+			this.timeIsUp();
+		}
+	}
 
-		// Execute every handler
-		console.log(this.onTickHandlers);
-		// TODO: it's not good that it passes this arg to *every* handler
-		this.onTickHandlers.forEach((handler) =>
-			handler(humanFriendlyTimeRepresentation),
-		);
+	private timeIsUp(): void {
+		if (!this.settings.continueAfterTimeIsUp) {
+			this.switchMode();
+			this.stop();
+		}
 	}
 
 	private pause(): void {

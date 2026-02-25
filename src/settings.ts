@@ -5,12 +5,14 @@ export interface BetterPomodoroPluginSettings {
 	workDurationInMinutes: string;
 	breakDurationInMinutes: string;
 	areSystemNotificationsPreferred: boolean;
+	continueAfterTimeIsUp: boolean;
 }
 
 export const DEFAULT_SETTINGS: BetterPomodoroPluginSettings = {
 	workDurationInMinutes: "60",
 	breakDurationInMinutes: "15",
 	areSystemNotificationsPreferred: false,
+	continueAfterTimeIsUp: false,
 };
 
 export class BetterPomodoroPluginSettingsTab extends PluginSettingTab {
@@ -56,6 +58,17 @@ export class BetterPomodoroPluginSettingsTab extends PluginSettingTab {
 					.onChange(async (newValue: boolean) => {
 						this.plugin.settings.areSystemNotificationsPreferred =
 							newValue;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName("Continue running after time is up")
+			.addToggle((component: ToggleComponent) => {
+				component
+					.setValue(this.plugin.settings.continueAfterTimeIsUp)
+					.onChange(async (newValue: boolean) => {
+						this.plugin.settings.continueAfterTimeIsUp = newValue;
 						await this.plugin.saveSettings();
 					});
 			});
