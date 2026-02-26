@@ -15,10 +15,10 @@ export default class BetterPomodoroPlugin extends Plugin {
 		await this.loadSettings();
 		this.timer = new Timer(this.settings);
 
-		const hfTimeLeft = this.timer.getHFTimeLeft();
-		const statusBarItemEl = this.addStatusBarItem();
-		// TODO: passing the entire timer object volates the SRP
-		this.statusBar = new StatusBar(statusBarItemEl, this.timer, hfTimeLeft);
+		let statusBarItemEl = this.addStatusBarItem();
+		// TODO: passing the entire timer object violates the X principle
+		// But doing it any other way adds so much more code...
+		this.statusBar = new StatusBar(statusBarItemEl, this.timer);
 
 		this.addCommand({
 			id: "toggle",

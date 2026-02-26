@@ -1,6 +1,6 @@
 import * as utils from "../src/utils.ts";
 
-describe("convert seconds to human friendly time representation", () => {
+describe("convert seconds to a human friendly time representation", () => {
 	it("zero seconds", () => {
 		var seconds = 0;
 		var expected = "00:00:00";

@@ -1,1 +1,1 @@
-export class Notice { }
+export class Notice {}

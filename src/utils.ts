@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 
-export function showSystemNotification(text: string) {
+export function systemNotify(text: string) {
 	const { Notification: ElectronNotification } = require("electron").remote;
 
 	const systemNotification = new ElectronNotification({
@@ -15,42 +15,42 @@ export function showSystemNotification(text: string) {
 		systemNotification.close();
 	});
 
+	// 6.5 second period feels about right
+	let notificationLifeTimeMillis = 6_543;
 	setTimeout(() => {
 		systemNotification.close();
-	}, 1_000);
+	}, notificationLifeTimeMillis);
 }
 
-export function showObsidianNotification(text: string) {
+export function obsidianNotify(text: string) {
 	new Notice(text);
 }
 
-export function sToHF(
-	// TODO: ensure the number is positive
-	secondsTotal: number,
-) {
+export function sToHF(secondsTotal: number) {
+	// Add a minus sign to the string if the seconds amount is negative
+	// and make the variable positive to avoid getting minus signs when
+	// dividing
+	var HFTime: string;
+	if (secondsTotal < 0) {
+		HFTime = "-";
+		secondsTotal *= -1;
+	} else {
+		HFTime = "";
+	}
+
 	const secondsLeft = secondsTotal % 60;
 	const minutesTotal = (secondsTotal - secondsLeft) / 60;
 	const minutesLeft = minutesTotal % 60;
 	const hoursTotal = (minutesTotal - minutesLeft) / 60;
 
-	const paddedTODO = [hoursTotal, minutesLeft, secondsLeft].map(
-		function padTimeUnits(timeUnit: number) {
-			let convertedTimeUnit = String(timeUnit);
-			// TODO: need more efficient way
-			if (convertedTimeUnit[0] == "-") {
-				convertedTimeUnit = convertedTimeUnit.slice(1);
-			}
-			let paddedConvertedTimeUnit = convertedTimeUnit.padStart(2, "00");
-			return paddedConvertedTimeUnit;
+	const paddedWithZerosTimeUnits = [hoursTotal, minutesLeft, secondsLeft].map(
+		function padTimeUnitsWithZeros(timeUnit: number) {
+			let paddedTimeUnit = String(timeUnit).padStart(2, "00");
+			return paddedTimeUnit;
 		},
 	);
 
-	let humanFriendlyRepresentation = paddedTODO.join(":");
+	HFTime += paddedWithZerosTimeUnits.join(":");
 
-	// Add a minus sign if the time is negative
-	if (secondsTotal < 0) {
-		humanFriendlyRepresentation = "-" + humanFriendlyRepresentation;
-	}
-
-	return humanFriendlyRepresentation;
+	return HFTime;
 }

@@ -3,12 +3,11 @@ import * as utils from "utils";
 import type { Mode } from "types";
 
 export default class Timer {
-	public timeLeftSeconds: number;
+	public secondsLeft: number;
 	public isRunning: boolean;
 
+	// TODO: maybe I should indicate that these handlers only update time displays
 	private onTickHandlers: ((newTime: string) => void)[];
-	// TODO: what if we use setInterval here instead of a worker?
-	// private clockWorker: Worker;
 	private clock: NodeJS.Timeout | undefined;
 	private settings: BetterPomodoroPluginSettings;
 	private mode: Mode;
@@ -23,12 +22,9 @@ export default class Timer {
 		this.isRunning = false;
 
 		// private props
-		// this.timeInSecondsLeft = this.calculateTimeLeft();
-		// TODO: is it really okay to just assign it randomly
+		// TODO: load previous mode
 		this.mode = "work";
-
-		this.timeLeftSeconds = this.getModeDurationSeconds();
-
+		this.secondsLeft = this.getModeDurationSeconds();
 		this.onTickHandlers = [];
 	}
 
@@ -43,16 +39,20 @@ export default class Timer {
 	switch(): void {
 		stop();
 		this.switchMode();
+		// TODO: run update handlers
 	}
 
 	reset(): void {
 		this.stop();
+
 		let currentModeDuration = this.getModeDurationSeconds();
-		this.timeLeftSeconds = currentModeDuration;
+		this.secondsLeft = currentModeDuration;
+		this.runOnTickHandlers();
 	}
 
 	destroy(): void {
-		this.pause();
+		// TODO: add time left saving
+		this.stop();
 	}
 
 	registerOnTickHandler(handler: (newTime: string) => void): void {
@@ -60,8 +60,7 @@ export default class Timer {
 	}
 
 	getHFTimeLeft(): string {
-		let secondsLeft = this.getModeDurationSeconds();
-		let HFTime = utils.sToHF(secondsLeft);
+		let HFTime = utils.sToHF(this.secondsLeft);
 		return HFTime;
 	}
 
@@ -95,56 +94,60 @@ export default class Timer {
 
 		const oneSecondInMilliseconds = 1000;
 
+		// this.secondsLeft = 5;
+
 		this.clock = setInterval(() => {
 			this.tick();
 		}, oneSecondInMilliseconds);
-
-		// TODO: should I write is or has?
-		let notificationText = "Pomodoro timer has started";
-		this.notify(notificationText);
 	}
 
 	private tick(): void {
-		this.timeLeftSeconds -= 1;
-
-		// Run onTickHandlers
-		// TODO: see if the shortened names are good, check if there are more traditional shortcuts
-		const HFTime = utils.sToHF(this.timeLeftSeconds);
-		this.onTickHandlers.forEach((onTickHandler) => onTickHandler(HFTime));
-
-		if (this.timeLeftSeconds == 0) {
+		this.secondsLeft -= 1;
+		this.runOnTickHandlers();
+		if (this.secondsLeft == 0) {
 			this.timeIsUp();
 		}
 	}
 
-	private timeIsUp(): void {
-		if (!this.settings.continueAfterTimeIsUp) {
-			this.switchMode();
-			this.stop();
-		}
+	// TODO: should I give it a name that implies that the function updates time
+	// display instead of just running on tick handlers
+	private runOnTickHandlers() {
+		// TODO: see if the shortened names are good, check if there are
+		// more traditional shortcuts
+		const HFTime = this.getHFTimeLeft();
+		this.onTickHandlers.forEach((onTickHandler) => onTickHandler(HFTime));
 	}
 
-	private pause(): void {
-		// TODO: add time left saving
-		this.stop();
+	private timeIsUp(): void {
+		if (!this.settings.continueAfterTimeIsUp) {
+			// TODO: shouldn't it be hidden in some function
+			this.switchMode();
+
+			let notificationText = "Time is up!";
+			this.notify(notificationText);
+
+			this.reset();
+		} else {
+			// TODO: play sound, but don't stop
+
+			let notificationText = "Time is up!";
+			this.notify(notificationText);
+		}
 	}
 
 	private stop(): void {
 		this.isRunning = false;
 
 		clearInterval(this.clock);
-
-		let notificationText = "Pomodoro timer has stopped";
-		this.notify(notificationText);
 	}
 
 	private notify(notificationText: string): void {
 		// TODO: Add sound to both system and obsidian notifications
 
 		if (this.settings.areSystemNotificationsPreferred) {
-			utils.showSystemNotification(notificationText);
+			utils.systemNotify(notificationText);
 		} else {
-			utils.showObsidianNotification(notificationText);
+			utils.obsidianNotify(notificationText);
 		}
 	}
 }
