@@ -6,6 +6,7 @@ export function systemNotify(text: string) {
 	const systemNotification = new ElectronNotification({
 		title: "Pomodoro Timer",
 		body: text,
+		// TODO: should it be silent?
 		silent: true,
 	});
 
@@ -22,20 +23,21 @@ export function systemNotify(text: string) {
 	}, notificationLifeTimeMillis);
 }
 
+// TODO: see if this name format is approapriate
 export function obsidianNotify(text: string) {
 	new Notice(text);
 }
 
-export function sToHF(secondsTotal: number) {
+export function convertSecondsToHumanTime(secondsTotal: number) {
 	// Add a minus sign to the string if the seconds amount is negative
 	// and make the variable positive to avoid getting minus signs when
 	// dividing
-	var HFTime: string;
+	var humanTime: string;
 	if (secondsTotal < 0) {
-		HFTime = "-";
+		humanTime = "-";
 		secondsTotal *= -1;
 	} else {
-		HFTime = "";
+		humanTime = "";
 	}
 
 	const secondsLeft = secondsTotal % 60;
@@ -50,7 +52,7 @@ export function sToHF(secondsTotal: number) {
 		},
 	);
 
-	HFTime += paddedWithZerosTimeUnits.join(":");
+	humanTime += paddedWithZerosTimeUnits.join(":");
 
-	return HFTime;
+	return humanTime;
 }

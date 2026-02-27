@@ -4,7 +4,7 @@ import * as Settings from "./settings";
 import Timer from "./timer";
 import StatusBar from "./status-bar";
 
-// TODO: update all deps step by step
+// TODO: update all the deps step by step
 
 export default class BetterPomodoroPlugin extends Plugin {
 	settings: Settings.BetterPomodoroPluginSettings;
@@ -16,7 +16,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 		this.timer = new Timer(this.settings);
 
 		let statusBarItemEl = this.addStatusBarItem();
-		// TODO: passing the entire timer object violates the X principle
+		// TODO: passing the entire timer object violates PoLP
 		// But doing it any other way adds so much more code...
 		this.statusBar = new StatusBar(statusBarItemEl, this.timer);
 

@@ -1,4 +1,5 @@
 import StatusBar from "../src/status-bar.ts";
+import type { OnTickTimeUpdater } from "../src/types.ts";
 
 // TODO: get back to this test file and see what you can improve and is done right
 
@@ -16,13 +17,12 @@ window.customElements.define("my-test-element", MyTestElement);
 var statusBarHTMLElement: MyTestElement;
 var HFTimeLeft: string = "00:00:00";
 
-type onTickHandlerType = (_: string) => void;
-// A mock timer with only methods used in the status bar
+// A mock timer with the only methods used in the status bar
 var timer = {
-	toggle() {},
-	reset() {},
-	registerOnTickHandler(_: onTickHandlerType) {},
-	getHFTimeLeft() {
+	toggle() { },
+	reset() { },
+	registerOnTickTimeUpdater(_: OnTickTimeUpdater) { },
+	getHumanTimeLeft() {
 		return HFTimeLeft;
 	},
 };
@@ -53,49 +53,51 @@ describe("default time displaying", () => {
 });
 
 describe("updating", () => {
-	it("register on tick update handler", () => {
-		var onTickHandlers: onTickHandlerType[] = [];
+	it("correctly register on tick updaters", () => {
+		var onTickTimeUpdaters: OnTickTimeUpdater[] = [];
 
-		var registerOnTickHandler = jest.fn(
-			(onTickHandler: onTickHandlerType) => {
-				onTickHandlers.push(onTickHandler);
+		var registerOnTickTimeUpdater = jest.fn(
+			(onTickTimeUpdater: OnTickTimeUpdater) => {
+				onTickTimeUpdaters.push(onTickTimeUpdater);
 			},
 		);
 
 		timer = {
 			...timer,
-			registerOnTickHandler,
+			registerOnTickTimeUpdater: registerOnTickTimeUpdater,
 		};
 
 		new StatusBar(statusBarHTMLElement, timer as any);
-		expect(registerOnTickHandler).toHaveBeenCalled();
-		expect(onTickHandlers).toHaveLength(1);
+		expect(registerOnTickTimeUpdater).toHaveBeenCalled();
+		expect(onTickTimeUpdaters).toHaveLength(1);
 	});
 
 	it("update time", () => {
-		var testHandler: onTickHandlerType = () => {};
+		var testOnTickTimeUpdater: OnTickTimeUpdater = () => { };
 
-		var registerOnTickHandler = jest.fn((newHandler: onTickHandlerType) => {
-			testHandler = newHandler;
-		});
+		var registerOnTickTimeUpdater = jest.fn(
+			(newUpdater: OnTickTimeUpdater) => {
+				testOnTickTimeUpdater = newUpdater;
+			},
+		);
 
 		timer = {
 			...timer,
-			registerOnTickHandler,
+			registerOnTickTimeUpdater,
 		};
 
 		new StatusBar(statusBarHTMLElement, timer as any);
 
 		HFTimeLeft = "00:00:00";
-		testHandler(HFTimeLeft);
+		testOnTickTimeUpdater(HFTimeLeft);
 		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
 
 		HFTimeLeft = "11:11:11";
-		testHandler(HFTimeLeft);
+		testOnTickTimeUpdater(HFTimeLeft);
 		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
 
 		HFTimeLeft = "-11:11:11";
-		testHandler(HFTimeLeft);
+		testOnTickTimeUpdater(HFTimeLeft);
 		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
 	});
 });

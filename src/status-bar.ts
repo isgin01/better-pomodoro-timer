@@ -2,19 +2,19 @@ import Timer from "./timer";
 
 export default class StatusBar {
 	constructor(element: HTMLElement, timer: Timer) {
-		let HFTimeLeft = timer.getHFTimeLeft();
-		element.innerHTML = this.constructInnerHTML(HFTimeLeft);
+		let HumanTimeLeft = timer.getHumanTimeLeft();
+		element.innerHTML = this.constructInnerHTML(HumanTimeLeft);
 		element.className = `${element.className} mod-clickable`;
 
-		element.addEventListener("click", (_) => {
+		element.addEventListener("click", () => {
 			timer.toggle();
 		});
 
-		element.addEventListener("auxclick", (_) => {
+		element.addEventListener("auxclick", () => {
 			timer.reset();
 		});
 
-		timer.registerOnTickHandler(
+		timer.registerOnTickTimeUpdater(
 			(humanFriendlyTimeRepresenation: string) => {
 				element.innerHTML = this.constructInnerHTML(
 					humanFriendlyTimeRepresenation,
