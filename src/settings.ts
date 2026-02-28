@@ -1,12 +1,6 @@
 import { App, PluginSettingTab, Setting, ToggleComponent } from "obsidian";
 import BetterPomodoroPlugin from "./main";
-
-export interface BetterPomodoroPluginSettings {
-	workDurationInMinutes: string;
-	breakDurationInMinutes: string;
-	areSystemNotificationsPreferred: boolean;
-	continueAfterTimeIsUp: boolean;
-}
+import type { BetterPomodoroPluginSettings } from "types";
 
 export const DEFAULT_SETTINGS: BetterPomodoroPluginSettings = {
 	workDurationInMinutes: "60",

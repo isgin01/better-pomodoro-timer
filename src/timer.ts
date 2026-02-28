@@ -1,18 +1,13 @@
-import { BetterPomodoroPluginSettings } from "settings";
-import * as utils from "utils";
-import type { Mode, OnTickTimeUpdater } from "types";
+import * as utils from "./utils";
+import type { OnTickTimeUpdater, BetterPomodoroPluginSettings } from "./types";
+import { Mode } from "./enums";
 
 export default class Timer {
-	secondsLeft: number;
-	isRunning: boolean;
-
-	// TODO: come up with a better name
-	// onTickEventTimeUpdater
-	// tickEventHandler
-	// onTickTimeUpdate
+	private isRunning: boolean;
+	private secondsLeft: number;
 	private onTickTimeUpdaters: OnTickTimeUpdater[];
 	private clock: NodeJS.Timeout | undefined;
-	private settings: BetterPomodoroPluginSettings;
+	private readonly settings: BetterPomodoroPluginSettings;
 	private mode: Mode;
 
 	constructor(settings: BetterPomodoroPluginSettings) {
@@ -25,15 +20,14 @@ export default class Timer {
 		this.isRunning = false;
 
 		// private props
-		// TODO: load the previous mode
-		this.mode = "work";
+		// TODO: load the previous mode instead
+		this.mode = Mode.WORK;
 		this.secondsLeft = this.getCurrentModeDurationSeconds();
 		this.onTickTimeUpdaters = [];
 	}
 
-	getHumanTimeLeft(): string {
-		let HumanTime = utils.convertSecondsToHumanTime(this.secondsLeft);
-		return HumanTime;
+	getIsRunning(): boolean {
+		return this.isRunning;
 	}
 
 	registerOnTickTimeUpdater(cb: (newTime: string) => void): void {
@@ -114,31 +108,32 @@ export default class Timer {
 
 	private switchMode(): void {
 		// TODO: there must be a more elegant way to do it
-		const nextMode = this.mode == "work" ? "break" : "work";
+		const nextMode = this.mode == Mode.WORK ? Mode.BREAK : Mode.WORK;
 		this.mode = nextMode;
+	}
+
+	getSecondsLeft(): number {
+		return this.secondsLeft;
 	}
 
 	reset(): void {
 		this.stop();
-
-		let currentModeDuration = this.getCurrentModeDurationSeconds();
-		this.secondsLeft = currentModeDuration;
+		this.secondsLeft = this.getCurrentModeDurationSeconds();
 		this.runOnTickTimeUpdaters();
 	}
 
 	private getCurrentModeDurationSeconds(): number {
-		// TODO: kinda shortened names, see if it made sense
-		switch (this.mode) {
-			case "work":
-				var durationMinutesUnparsed =
-					this.settings.workDurationInMinutes;
-			case "break":
-				var durationMinutesUnparsed =
-					this.settings.breakDurationInMinutes;
+		if (this.mode == Mode.WORK) {
+			var durationMinutesUnparsed = this.settings.workDurationInMinutes;
+		}
+		// TODO: } else if (this.mode == Mode.BREAK) {
+		else {
+			var durationMinutesUnparsed = this.settings.breakDurationInMinutes;
 		}
 
 		// TODO: see if it makes sense to create a helper func that would
 		// convert string minutes to integer seconds
+
 		let durationMinutes = Number(durationMinutesUnparsed);
 		let durationSeconds = durationMinutes * 60;
 
@@ -148,7 +143,8 @@ export default class Timer {
 	private runOnTickTimeUpdaters() {
 		// TODO: see if the shortened names are good, check if there are
 		// more traditional shortcuts
-		const humanTime = this.getHumanTimeLeft();
+		const secondsLeft = this.getSecondsLeft();
+		const humanTime = utils.convertSecondsToHumanTime(secondsLeft);
 		this.onTickTimeUpdaters.forEach((updater) => updater(humanTime));
 	}
 }

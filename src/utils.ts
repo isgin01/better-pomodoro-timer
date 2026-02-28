@@ -6,7 +6,7 @@ export function systemNotify(text: string) {
 	const systemNotification = new ElectronNotification({
 		title: "Pomodoro Timer",
 		body: text,
-		// TODO: should it be silent?
+		// TODO: should it be silent actually?
 		silent: true,
 	});
 

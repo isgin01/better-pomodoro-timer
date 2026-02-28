@@ -1,5 +1,5 @@
-import StatusBar from "../src/status-bar.ts";
-import type { OnTickTimeUpdater } from "../src/types.ts";
+import StatusBar from "../src/status-bar";
+import type { OnTickTimeUpdater } from "../src/types";
 
 // TODO: get back to this test file and see what you can improve and is done right
 

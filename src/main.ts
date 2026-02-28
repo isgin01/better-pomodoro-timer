@@ -1,13 +1,14 @@
 import { Plugin } from "obsidian";
 
-import * as Settings from "./settings";
+import * as settings from "./settings";
 import Timer from "./timer";
 import StatusBar from "./status-bar";
+import type * as types from "./types";
 
 // TODO: update all the deps step by step
 
 export default class BetterPomodoroPlugin extends Plugin {
-	settings: Settings.BetterPomodoroPluginSettings;
+	settings: types.BetterPomodoroPluginSettings;
 	timer: Timer;
 	statusBar: StatusBar;
 
@@ -39,12 +40,12 @@ export default class BetterPomodoroPlugin extends Plugin {
 		this.addCommand({
 			id: "reset",
 			name: "Reset Better Pomodoro Timer",
-			callback: () => {},
+			callback: () => { },
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(
-			new Settings.BetterPomodoroPluginSettingsTab(this.app, this),
+			new settings.BetterPomodoroPluginSettingsTab(this.app, this),
 		);
 	}
 
@@ -56,8 +57,8 @@ export default class BetterPomodoroPlugin extends Plugin {
 	async loadSettings() {
 		this.settings = Object.assign(
 			{},
-			Settings.DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<Settings.BetterPomodoroPluginSettings>,
+			settings.DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<types.BetterPomodoroPluginSettings>,
 		);
 	}
 
