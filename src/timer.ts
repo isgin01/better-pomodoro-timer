@@ -1,16 +1,16 @@
 import * as utils from "./utils";
-import type { OnTickTimeUpdater, BetterPomodoroPluginSettings } from "./types";
+import type * as types from "./types";
 import { Mode } from "./enums";
 
 export default class Timer {
 	private isRunning: boolean;
 	private secondsLeft: number;
-	private onTickTimeUpdaters: OnTickTimeUpdater[];
+	private onTickTimeUpdaters: types.OnTickTimeUpdater[];
 	private clock: NodeJS.Timeout | undefined;
-	private readonly settings: BetterPomodoroPluginSettings;
+	private readonly settings: types.BetterPomodoroPluginSettings;
 	private mode: Mode;
 
-	constructor(settings: BetterPomodoroPluginSettings) {
+	constructor(settings: types.BetterPomodoroPluginSettings) {
 		// TODO: rewrite the comment
 		// Assign settings before all other props because it can used
 		// in order to load/assign the other props
@@ -21,9 +21,24 @@ export default class Timer {
 
 		// private props
 		// TODO: load the previous mode instead
-		this.mode = Mode.WORK;
+		this.mode = Mode.work;
 		this.secondsLeft = this.getCurrentModeDurationSeconds();
 		this.onTickTimeUpdaters = [];
+	}
+
+	getCurrentMode(): string {
+		return Mode[this.mode];
+	}
+
+	// TODO: decide if you need to leave this method here or use utils instead.
+	// I think it doesn't violate DRY. Instead, it helps to avoid repeating code.
+	getTimeLeft(): types.TimeLeft {
+		let seconds = this.secondsLeft;
+		let HFTime = utils.convertSecondsToHFTime(seconds);
+		return {
+			seconds,
+			HFTime: HFTime,
+		};
 	}
 
 	getIsRunning(): boolean {
@@ -108,12 +123,8 @@ export default class Timer {
 
 	private switchMode(): void {
 		// TODO: there must be a more elegant way to do it
-		const nextMode = this.mode == Mode.WORK ? Mode.BREAK : Mode.WORK;
+		const nextMode = this.mode == Mode.work ? Mode.break : Mode.work;
 		this.mode = nextMode;
-	}
-
-	getSecondsLeft(): number {
-		return this.secondsLeft;
 	}
 
 	reset(): void {
@@ -123,7 +134,7 @@ export default class Timer {
 	}
 
 	private getCurrentModeDurationSeconds(): number {
-		if (this.mode == Mode.WORK) {
+		if (this.mode == Mode.work) {
 			var durationMinutesUnparsed = this.settings.workDurationInMinutes;
 		}
 		// TODO: } else if (this.mode == Mode.BREAK) {
@@ -140,11 +151,10 @@ export default class Timer {
 		return durationSeconds;
 	}
 
+	// TODO: rename it to runOnUpdateHandlers or something
+	// OnTick is not a good choice because it is supposed to run on mode switching too
 	private runOnTickTimeUpdaters() {
-		// TODO: see if the shortened names are good, check if there are
-		// more traditional shortcuts
-		const secondsLeft = this.getSecondsLeft();
-		const humanTime = utils.convertSecondsToHumanTime(secondsLeft);
-		this.onTickTimeUpdaters.forEach((updater) => updater(humanTime));
+		let timeLeft = this.getTimeLeft();
+		this.onTickTimeUpdaters.forEach((updater) => updater(timeLeft.HFTime));
 	}
 }

@@ -7,3 +7,8 @@ export type BetterPomodoroPluginSettings = {
 	areSystemNotificationsPreferred: boolean;
 	continueAfterTimeIsUp: boolean;
 };
+
+export type TimeLeft = {
+	seconds: number;
+	HFTime: string;
+};

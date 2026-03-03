@@ -1,7 +1,9 @@
 import { Notice } from "obsidian";
 
 export function systemNotify(text: string) {
-	const { Notification: ElectronNotification } = require("electron").remote;
+	// const { Notification: ElectronNotification } = require("electron").remote;
+	const electron = require("electron").remote;
+	const ElectronNotification = electron.Notification;
 
 	const systemNotification = new ElectronNotification({
 		title: "Pomodoro Timer",
@@ -28,7 +30,7 @@ export function obsidianNotify(text: string) {
 	new Notice(text);
 }
 
-export function convertSecondsToHumanTime(secondsTotal: number) {
+export function convertSecondsToHFTime(secondsTotal: number) {
 	// Add a minus sign to the string if the seconds amount is negative
 	// and make the variable positive to avoid getting minus signs when
 	// dividing

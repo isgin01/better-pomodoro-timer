@@ -2,8 +2,9 @@ import Timer from "./timer";
 
 export default class StatusBar {
 	constructor(element: HTMLElement, timer: Timer) {
-		let HumanTimeLeft = timer.getHumanTimeLeft();
-		element.innerHTML = this.constructInnerHTML(HumanTimeLeft);
+		// TODO: would it better to just add a method to Timer?
+		let humanTimeLeft = timer.getTimeLeft().HFTime;
+		element.innerHTML = this.constructInnerHTML(humanTimeLeft);
 		element.className = `${element.className} mod-clickable`;
 
 		element.addEventListener("click", () => {

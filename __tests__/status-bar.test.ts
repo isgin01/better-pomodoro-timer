@@ -15,15 +15,18 @@ class MyTestElement extends HTMLElement {
 window.customElements.define("my-test-element", MyTestElement);
 
 var statusBarHTMLElement: MyTestElement;
-var HFTimeLeft: string = "00:00:00";
+var HFTime: string = "00:00:00";
 
 // A mock timer with the only methods used in the status bar
 var timer = {
 	toggle() { },
 	reset() { },
 	registerOnTickTimeUpdater(_: OnTickTimeUpdater) { },
-	getHumanTimeLeft() {
-		return HFTimeLeft;
+	getTimeLeft() {
+		return {
+			seconds: 0,
+			HFTime,
+		};
 	},
 };
 
@@ -35,20 +38,20 @@ statusBarHTMLElement = new MyTestElement();
 describe("default time displaying", () => {
 	it("zeros", () => {
 		new StatusBar(statusBarHTMLElement, timer as any);
-		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
+		expect(statusBarHTMLElement.innerHTML).toContain(HFTime);
 	});
 
 	it("normal", () => {
-		HFTimeLeft = "01:49:50";
+		HFTime = "01:49:50";
 		// StatusBar needs to be created in every test manually because
 		new StatusBar(statusBarHTMLElement, timer as any);
-		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
+		expect(statusBarHTMLElement.innerHTML).toContain(HFTime);
 	});
 
 	it("negative", () => {
-		HFTimeLeft = "-34:49:00";
+		HFTime = "-34:49:00";
 		new StatusBar(statusBarHTMLElement, timer as any);
-		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
+		expect(statusBarHTMLElement.innerHTML).toContain(HFTime);
 	});
 });
 
@@ -88,17 +91,17 @@ describe("updating", () => {
 
 		new StatusBar(statusBarHTMLElement, timer as any);
 
-		HFTimeLeft = "00:00:00";
-		testOnTickTimeUpdater(HFTimeLeft);
-		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
+		HFTime = "00:00:00";
+		testOnTickTimeUpdater(HFTime);
+		expect(statusBarHTMLElement.innerHTML).toContain(HFTime);
 
-		HFTimeLeft = "11:11:11";
-		testOnTickTimeUpdater(HFTimeLeft);
-		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
+		HFTime = "11:11:11";
+		testOnTickTimeUpdater(HFTime);
+		expect(statusBarHTMLElement.innerHTML).toContain(HFTime);
 
-		HFTimeLeft = "-11:11:11";
-		testOnTickTimeUpdater(HFTimeLeft);
-		expect(statusBarHTMLElement.innerHTML).toContain(HFTimeLeft);
+		HFTime = "-11:11:11";
+		testOnTickTimeUpdater(HFTime);
+		expect(statusBarHTMLElement.innerHTML).toContain(HFTime);
 	});
 });
 

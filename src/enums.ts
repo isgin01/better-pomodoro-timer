@@ -1,4 +1,4 @@
 export enum Mode {
-	WORK,
-	BREAK,
+	work,
+	break,
 }
