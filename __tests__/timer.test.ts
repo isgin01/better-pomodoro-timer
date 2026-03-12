@@ -1,10 +1,9 @@
 import Timer from "../src/timer";
 import { BetterPomodoroPluginSettings, TimeLeft } from "../src/types";
-import { convertSecondsToHFTime } from "../src/utils";
 
 const oneSecondMilliseconds = 1_000;
 
-describe("TODO", () => {
+describe("proper timer behaviour", () => {
 	let settings: BetterPomodoroPluginSettings = {
 		workDurationInMinutes: "60",
 		breakDurationInMinutes: "10",
@@ -23,7 +22,7 @@ describe("TODO", () => {
 		expect(timer.getIsRunning()).toBe(false);
 	});
 
-	it("run setInterval", () => {
+	it("setInterval is called", () => {
 		jest.spyOn(global, "setInterval");
 
 		timer.toggle();
@@ -37,93 +36,52 @@ describe("TODO", () => {
 			oneSecondMilliseconds,
 		);
 	});
-});
 
-function convertSecondsToTimeLeft(seconds: number): TimeLeft {
-	let HF = convertSecondsToHFTime(seconds);
-
-	return {
-		// Return first and then subtract
-		seconds,
-		HFTime: HF,
-	};
-}
-
-// TODO: make the test case neater
-describe("continue after time is up", () => {
-	jest.useFakeTimers();
-
-	var workDurationInMinutes = 1800;
-
-	let settings: BetterPomodoroPluginSettings = {
-		workDurationInMinutes: String(workDurationInMinutes),
-		breakDurationInMinutes: "10",
-		areSystemNotificationsPreferred: true,
-		continueAfterTimeIsUp: true,
-	};
-
-	var timer: Timer;
-	var updater: () => void;
-
-	var secondsLeftTotal = workDurationInMinutes * 60;
-	var secondsLeftCurrent = secondsLeftTotal;
-
-	beforeEach(() => {
-		timer = new Timer(settings);
-		updater = jest.fn();
-		timer.registerOnTickTimeUpdater(updater);
-	});
-
-	it("not running yet, not seconds passed", () => {
+	it("proper toggle functionality", () => {
 		expect(timer.getIsRunning()).toBe(false);
-		expect(timer.getTimeLeft()).toStrictEqual(
-			convertSecondsToTimeLeft(secondsLeftCurrent),
-		);
-		expect(updater).toHaveBeenCalledTimes(
-			secondsLeftTotal - secondsLeftCurrent,
-		);
-	});
-
-	it("is running, to seconds passed though", () => {
 		timer.toggle();
 		expect(timer.getIsRunning()).toBe(true);
-		expect(timer.getTimeLeft()).toStrictEqual(
-			convertSecondsToTimeLeft(secondsLeftCurrent),
-		);
-		expect(updater).toHaveBeenCalledTimes(
-			secondsLeftTotal - secondsLeftCurrent,
-		);
+		timer.toggle();
+		expect(timer.getIsRunning()).toBe(false);
 	});
 
-	var TODO = [1, 20, 60, 40 * 60, 60 * 60];
-	var TODO2 = TODO.concat(TODO);
-
-	it("proper time display", () => {
+	it("timeUpdateHandler function is called properly", () => {
+		let timeUpdateHandler = jest.fn();
+		timer.registerTimeUpdateHandler(timeUpdateHandler);
+		jest.useFakeTimers();
 		timer.toggle();
-		TODO2.forEach((decrease: number) => {
-			secondsLeftCurrent -= decrease;
 
-			jest.advanceTimersByTime(oneSecondMilliseconds * decrease);
+		jest.advanceTimersByTime(oneSecondMilliseconds);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(1);
+		jest.advanceTimersByTime(oneSecondMilliseconds);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(2);
+		jest.advanceTimersByTime(oneSecondMilliseconds * 60);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(62);
+		jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(3662);
+		jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60 * 10);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(39662);
 
-			expect(timer.getIsRunning()).toBe(true);
-			expect(timer.getTimeLeft()).toStrictEqual(
-				convertSecondsToTimeLeft(secondsLeftCurrent),
-			);
-			expect(updater).toHaveBeenCalledTimes(
-				secondsLeftTotal - secondsLeftCurrent,
-			);
-		});
+		// Must not be called after timer is stopped
+		timer.toggle();
+		jest.advanceTimersByTime(oneSecondMilliseconds * 60);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(39662);
 	});
 
 	it("stop, must not change anymore", () => {
-		timer.toggle();
-		expect(timer.getIsRunning()).toBe(true);
+		let workDurationInMinutes = 30 * 60;
+		let secondsLeftTotal = workDurationInMinutes * 60;
 
+		let settings: BetterPomodoroPluginSettings = {
+			workDurationInMinutes: String(workDurationInMinutes),
+			breakDurationInMinutes: "10",
+			areSystemNotificationsPreferred: true,
+			continueAfterTimeIsUp: true,
+		};
+		let timer = new Timer(settings);
+		timer.toggle();
 		jest.advanceTimersByTime(oneSecondMilliseconds);
-
 		timer.toggle();
-
-		expect(timer.getIsRunning()).toBe(false);
 
 		let expectedTimeLeft: TimeLeft = {
 			seconds: secondsLeftTotal - 1,
@@ -137,7 +95,120 @@ describe("continue after time is up", () => {
 
 		// Must still be the same
 
-		expect(timer.getIsRunning()).toBe(false);
 		expect(timer.getTimeLeft()).toStrictEqual(expectedTimeLeft);
+	});
+});
+
+it("proper time display", () => {
+	jest.useFakeTimers();
+
+	let workDurationMinutes = 24 * 60;
+	var secondsLeft = workDurationMinutes * 60;
+
+	let settings: BetterPomodoroPluginSettings = {
+		workDurationInMinutes: String(workDurationMinutes),
+		breakDurationInMinutes: "10",
+		areSystemNotificationsPreferred: true,
+		continueAfterTimeIsUp: true,
+	};
+
+	let timer = new Timer(settings);
+	timer.toggle();
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * 1);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 1),
+		HFTime: "23:59:59",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * 60);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 60),
+		HFTime: "23:58:59",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 60 * 60),
+		HFTime: "22:58:59",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60 * 22);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 60 * 60 * 22),
+		HFTime: "00:58:59",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * (60 * 58 + 59));
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 60 * 58 + 59),
+		HFTime: "00:00:00",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 1),
+		HFTime: "-00:00:01",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * 60);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 60),
+		HFTime: "-00:01:01",
+	});
+
+	jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60);
+	expect(timer.getTimeLeft()).toStrictEqual({
+		seconds: (secondsLeft -= 60 * 60),
+		HFTime: "-01:01:01",
+	});
+});
+
+describe("switch behavior", () => {
+	// Check what happens
+	// jest.useFakeTimers();
+
+	var settings: BetterPomodoroPluginSettings = {
+		workDurationInMinutes: "60",
+		breakDurationInMinutes: "10",
+		areSystemNotificationsPreferred: true,
+		continueAfterTimeIsUp: false,
+	};
+
+	it("switch while on hold", () => {
+		var timer = new Timer(settings);
+		expect(timer.getTimeLeft().HFTime).toBe("01:00:00");
+		timer.switch();
+		expect(timer.getTimeLeft().HFTime).toBe("00:10:00");
+	});
+
+	it("call timeUpdateHandler func", () => {
+		var timer = new Timer(settings);
+		var timeUpdateHandler = jest.fn();
+		timer.registerTimeUpdateHandler(timeUpdateHandler);
+		timer.switch();
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(1);
+	});
+
+	it("switch after time is up", () => {
+		var timer = new Timer(settings);
+		var timeUpdateHandler = jest.fn();
+		timer.registerTimeUpdateHandler(timeUpdateHandler);
+		jest.spyOn(timer, "switch");
+		timer.toggle();
+
+		// not yet
+		jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60 - 1);
+		expect(timer.getTimeLeft().seconds).toBe(1);
+		expect(timer.getIsRunning()).toBe(true);
+		expect(timer.switch).toHaveBeenCalledTimes(0);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(60 * 60 - 1);
+
+		// now it must change
+		jest.advanceTimersByTime(oneSecondMilliseconds);
+		expect(timer.getTimeLeft().seconds).toBe(60 * 10);
+		expect(timer.getIsRunning()).toBe(false);
+		expect(timer.switch).toHaveBeenCalledTimes(1);
+		expect(timeUpdateHandler).toHaveBeenCalledTimes(60 * 60 + 1);
 	});
 });

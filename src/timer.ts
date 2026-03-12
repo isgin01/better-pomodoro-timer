@@ -3,17 +3,17 @@ import type * as types from "./types";
 import { Mode } from "./enums";
 
 export default class Timer {
-	private isRunning: boolean;
-	private secondsLeft: number;
-	private onTickTimeUpdaters: types.OnTickTimeUpdater[];
-	private clock: NodeJS.Timeout | undefined;
 	private readonly settings: types.BetterPomodoroPluginSettings;
+	private isRunning: boolean;
 	private mode: Mode;
+	private secondsLeft: number;
+	private timeUpdateHandlers: types.TimeUpdateHandler[];
+
+	private interval: NodeJS.Timeout | undefined;
 
 	constructor(settings: types.BetterPomodoroPluginSettings) {
-		// TODO: rewrite the comment
-		// Assign settings before all other props because it can used
-		// in order to load/assign the other props
+		// It's important to make sure that seetings are assigned first since
+		// they can be used for other props initialization
 		this.settings = settings;
 
 		// public props
@@ -23,7 +23,7 @@ export default class Timer {
 		// TODO: load the previous mode instead
 		this.mode = Mode.work;
 		this.secondsLeft = this.getCurrentModeDurationSeconds();
-		this.onTickTimeUpdaters = [];
+		this.timeUpdateHandlers = [];
 	}
 
 	getCurrentMode(): string {
@@ -45,8 +45,8 @@ export default class Timer {
 		return this.isRunning;
 	}
 
-	registerOnTickTimeUpdater(cb: (newTime: string) => void): void {
-		this.onTickTimeUpdaters.push(cb);
+	registerTimeUpdateHandler(cb: (newTime: string) => void): void {
+		this.timeUpdateHandlers.push(cb);
 	}
 
 	destroy(): void {
@@ -67,35 +67,30 @@ export default class Timer {
 
 		const oneSecondInMilliseconds = 1000;
 
-		// this.secondsLeft = 5;
-
-		this.clock = setInterval(() => {
+		this.interval = setInterval(() => {
 			this.tick();
 		}, oneSecondInMilliseconds);
 	}
 
 	private tick(): void {
 		this.secondsLeft -= 1;
-		this.runOnTickTimeUpdaters();
+		this.runTimeUpdateHandlers();
 		if (this.secondsLeft == 0) {
 			this.timeIsUp();
 		}
 	}
 
 	private timeIsUp(): void {
-		if (!this.settings.continueAfterTimeIsUp) {
-			// TODO: shouldn't it be hidden in some function
-			this.switchMode();
-
-			let notificationText = "Time is up!";
-			this.notify(notificationText);
-
-			this.reset();
-		} else {
+		if (this.settings.continueAfterTimeIsUp) {
 			// TODO: play sound, but don't stop
-
 			let notificationText = "Time is up!";
 			this.notify(notificationText);
+		} else {
+			// TODO: shouldn't it be hidden in some function
+			let notificationText = "Time is up!";
+			this.notify(notificationText);
+
+			this.switch();
 		}
 	}
 
@@ -112,13 +107,12 @@ export default class Timer {
 	private stop(): void {
 		this.isRunning = false;
 
-		clearInterval(this.clock);
+		clearInterval(this.interval);
 	}
 
 	switch(): void {
-		stop();
 		this.switchMode();
-		// TODO: run on tick updater
+		this.reset();
 	}
 
 	private switchMode(): void {
@@ -130,15 +124,13 @@ export default class Timer {
 	reset(): void {
 		this.stop();
 		this.secondsLeft = this.getCurrentModeDurationSeconds();
-		this.runOnTickTimeUpdaters();
+		this.runTimeUpdateHandlers();
 	}
 
 	private getCurrentModeDurationSeconds(): number {
 		if (this.mode == Mode.work) {
 			var durationMinutesUnparsed = this.settings.workDurationInMinutes;
-		}
-		// TODO: } else if (this.mode == Mode.BREAK) {
-		else {
+		} else {
 			var durationMinutesUnparsed = this.settings.breakDurationInMinutes;
 		}
 
@@ -151,10 +143,10 @@ export default class Timer {
 		return durationSeconds;
 	}
 
-	// TODO: rename it to runOnUpdateHandlers or something
-	// OnTick is not a good choice because it is supposed to run on mode switching too
-	private runOnTickTimeUpdaters() {
+	private runTimeUpdateHandlers() {
 		let timeLeft = this.getTimeLeft();
-		this.onTickTimeUpdaters.forEach((updater) => updater(timeLeft.HFTime));
+		this.timeUpdateHandlers.forEach((timeUpdateHandler) =>
+			timeUpdateHandler(timeLeft.HFTime),
+		);
 	}
 }

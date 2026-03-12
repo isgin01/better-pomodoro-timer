@@ -1,4 +1,4 @@
-export type OnTickTimeUpdater = (newTime: string) => void;
+export type TimeUpdateHandler = (newTime: string) => void;
 
 // TODO: When should I use 'type' and when 'interface'?
 export type BetterPomodoroPluginSettings = {

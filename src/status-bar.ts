@@ -1,21 +1,31 @@
+import { Menu } from "obsidian";
 import Timer from "./timer";
 
 export default class StatusBar {
 	constructor(element: HTMLElement, timer: Timer) {
-		// TODO: would it better to just add a method to Timer?
 		let humanTimeLeft = timer.getTimeLeft().HFTime;
 		element.innerHTML = this.constructInnerHTML(humanTimeLeft);
 		element.className = `${element.className} mod-clickable`;
+
+		let menu = new Menu();
+
+		menu.addItem((item) => {
+			item.setTitle("Reset").onClick(() => timer.reset());
+		});
+
+		menu.addItem((item) => {
+			item.setTitle("Switch").onClick(() => timer.switch());
+		});
 
 		element.addEventListener("click", () => {
 			timer.toggle();
 		});
 
-		element.addEventListener("auxclick", () => {
-			timer.reset();
+		element.addEventListener("auxclick", (event) => {
+			menu.showAtMouseEvent(event);
 		});
 
-		timer.registerOnTickTimeUpdater(
+		timer.registerTimeUpdateHandler(
 			(humanFriendlyTimeRepresenation: string) => {
 				element.innerHTML = this.constructInnerHTML(
 					humanFriendlyTimeRepresenation,
