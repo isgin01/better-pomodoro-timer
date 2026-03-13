@@ -4,17 +4,32 @@ import * as settings from "./settings";
 import Timer from "./timer";
 import StatusBar from "./status-bar";
 import type * as types from "./types";
+import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "custom-view";
 
 // TODO: update all the deps step by step
 
 export default class BetterPomodoroPlugin extends Plugin {
-	settings: types.BetterPomodoroPluginSettings;
+	settings: types.PluginSettings;
 	timer: Timer;
 	statusBar: StatusBar;
 
 	async onload() {
 		await this.loadSettings();
 		this.timer = new Timer(this.settings);
+
+		// TODO: can I simplify these blocks?
+		var customView: CustomView;
+		this.registerView(PLUGIN_CUSTOM_VIEW_ID, (leaf) => {
+			var customView: CustomView = new CustomView(leaf, this.timer);
+			return customView;
+		});
+
+		if (this.settings.showCustomView) {
+			var workspace = this.app.workspace;
+			this.addRibbonIcon("dice", "Activate View", () => {
+				customView.activate(workspace);
+			});
+		}
 
 		let statusBarItemEl = this.addStatusBarItem();
 		// TODO: passing the entire timer object violates PoLP
@@ -40,7 +55,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 		this.addCommand({
 			id: "reset",
 			name: "Reset Better Pomodoro Timer",
-			callback: () => { },
+			callback: () => {},
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
@@ -58,7 +73,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			settings.DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<types.BetterPomodoroPluginSettings>,
+			(await this.loadData()) as Partial<types.PluginSettings>,
 		);
 	}
 

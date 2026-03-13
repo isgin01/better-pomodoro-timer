@@ -25,13 +25,15 @@ export default class StatusBar {
 			menu.showAtMouseEvent(event);
 		});
 
-		timer.registerTimeUpdateHandler(
-			(humanFriendlyTimeRepresenation: string) => {
-				element.innerHTML = this.constructInnerHTML(
-					humanFriendlyTimeRepresenation,
-				);
-			},
-		);
+		let statusBarTimeUpdateHandler = (
+			humanFriendlyTimeRepresenation: string,
+		) => {
+			element.innerHTML = this.constructInnerHTML(
+				humanFriendlyTimeRepresenation,
+			);
+		};
+
+		timer.registerTimeUpdateHandler(statusBarTimeUpdateHandler);
 	}
 
 	private constructInnerHTML(time: string) {

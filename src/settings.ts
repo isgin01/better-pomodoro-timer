@@ -1,12 +1,16 @@
 import { App, PluginSettingTab, Setting, ToggleComponent } from "obsidian";
 import BetterPomodoroPlugin from "./main";
-import type { BetterPomodoroPluginSettings } from "types";
+import type { PluginSettings } from "types";
 
-export const DEFAULT_SETTINGS: BetterPomodoroPluginSettings = {
+export const DEFAULT_SETTINGS: PluginSettings = {
 	workDurationInMinutes: "60",
 	breakDurationInMinutes: "15",
 	areSystemNotificationsPreferred: false,
 	continueAfterTimeIsUp: false,
+	// TODO: need a better name
+	showCustomView: true,
+	// TODO: add option to turn off status bar too.
+	// Some may prefer using just hotkeys without graphic view.
 };
 
 export class BetterPomodoroPluginSettingsTab extends PluginSettingTab {
@@ -21,6 +25,18 @@ export class BetterPomodoroPluginSettingsTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
+
+		new Setting(containerEl)
+			.setName("Show Custom View")
+			.addToggle((component: ToggleComponent) => {
+				component
+					.setValue(this.plugin.settings.showCustomView)
+					.onChange(async (newValue: boolean) => {
+						// TODO: how do I update the view?
+						this.plugin.settings.showCustomView = newValue;
+						await this.plugin.saveSettings();
+					});
+			});
 
 		new Setting(containerEl).setName("Work duration").addText((text) => {
 			text.setPlaceholder("Enter time in minutes")

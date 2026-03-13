@@ -3,7 +3,7 @@ import type * as types from "./types";
 import { Mode } from "./enums";
 
 export default class Timer {
-	private readonly settings: types.BetterPomodoroPluginSettings;
+	private readonly settings: types.PluginSettings;
 	private isRunning: boolean;
 	private mode: Mode;
 	private secondsLeft: number;
@@ -11,7 +11,7 @@ export default class Timer {
 
 	private interval: NodeJS.Timeout | undefined;
 
-	constructor(settings: types.BetterPomodoroPluginSettings) {
+	constructor(settings: types.PluginSettings) {
 		// It's important to make sure that seetings are assigned first since
 		// they can be used for other props initialization
 		this.settings = settings;
@@ -55,6 +55,7 @@ export default class Timer {
 	}
 
 	toggle(): void {
+		console.log("toggle");
 		if (this.isRunning) {
 			this.stop();
 		} else {
