@@ -6,3 +6,42 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.svg-container {
+	width: 100%;
+	height: 100%;
+	justify-content: center;
+	justify-items: center;
+}
+
+.svg-container svg {
+	display: block;
+	margin: 10px auto;
+	width: 140px;
+	height: 140px;
+}
+
+#circle1 {
+	fill: red;
+}
+
+#circle2 {
+	fill: var(--background-secondary);
+}
+
+.timer-view-container {
+	display: flex;
+	flex-direction: column;
+}
+
+.time-container {
+	margin: auto;
+	font-size: 1.35rem;
+	translate: 0px -93px;
+}
+
+.button-container {
+	display: flex;
+	justify-content: center;
+	translate: 0px -40px;
+}
