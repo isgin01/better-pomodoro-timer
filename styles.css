@@ -1,8 +1,46 @@
-/*
+.animation-container {
+	width: 100%;
+	height: 100%;
+	justify-content: center;
+	justify-items: center;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.animation-container svg {
+	display: block;
+	margin: 10px auto;
+	width: 140px;
+	height: 140px;
+}
 
-If your plugin does not need CSS, delete this file.
+#circle1 {
+	fill: red;
+}
 
-*/
+#circle2 {
+	fill: var(--background-secondary);
+}
+
+.custom-view-container {
+	display: flex;
+	flex-direction: column;
+}
+
+.time-container {
+	margin: auto;
+	font-size: 1.35rem;
+	translate: 0px -93px;
+}
+
+.btn-container {
+	margin-top: 1vh;
+	display: flex;
+	justify-content: center;
+	translate: 0px -40px;
+}
+
+.btn-container button {
+    background: none;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}

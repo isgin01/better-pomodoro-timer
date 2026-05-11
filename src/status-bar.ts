@@ -1,20 +1,48 @@
+import { Menu } from "obsidian";
 import Timer from "./timer";
 
-export default class StatusBar {
-	private element: HTMLElement;
-	private timer: Timer;
+export function build(el: HTMLElement, timer: Timer) {
 
-	constructor(element: HTMLElement, timer: Timer) {
-		this.element = element;
-		this.timer = timer;
+	// Make the status bar clickable
+	el.className += " mod-clickable";
 
-		// TODO: Move the component to some other place maybe?
-		this.element.className = `${element.className} mod-clickable`;
-		this.element.innerHTML = `<span>${timer.timeInSecondsLeft}</span>`;
-		this.element.addEventListener("click", (_) => {
-			this.timer.toggle();
-		});
+	el.addEventListener("click", () => {
+		timer.toggle();
+	});
+
+	// Menu that will appear on auxclick
+
+	let menu = new Menu();
+
+	menu.addItem((i) => {
+		i.setTitle("Reset").onClick(() => timer.reset());
+	});
+	menu.addItem((i) => {
+		i.setTitle("Switch").onClick(() => timer.switch());
+	});
+
+	el.addEventListener("auxclick", (ev) => {
+		menu.showAtMouseEvent(ev);
+	});
+
+	let timeUpdateHandler = (
+		HFTime: string,
+	) => {
+		el.innerHTML = `<span>${HFTime}</span>`
+	};
+
+	// Set initial value
+
+	timeUpdateHandler(timer.getTimeLeft().HFTime)
+
+	timer.registerTimeUpdateHandler(timeUpdateHandler);
+}
+
+
+export function alterVisibility(show: boolean, el: HTMLElement) {
+	if (show) {
+		el.style.display = "block";
+	} else {
+		el.style.display = "none";
 	}
-
-	destroy() { }
 }
