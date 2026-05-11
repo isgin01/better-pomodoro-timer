@@ -1,83 +1,172 @@
-import Worker from "clock.worker";
-import { BetterPomodoroPluginSettings } from "settings";
-import * as utils from "utils";
-import type { messageToWorker } from "types";
+import { type PluginSettings } from "settings"
+import { notify } from "./utils"
 
-export default class Timer {
-	public timeInSecondsLeft: number;
-	public isRunning: boolean;
+export type updateCallback = (time?: string) => void
 
-	private clockWorker: Worker;
-	private settings: BetterPomodoroPluginSettings;
+export class Timer {
+	private isRunning: boolean
+	private readonly settings: PluginSettings
+	private mode: "work" | "break"
+	private secondsLeft: number
+	private onTickCallbacks: updateCallback[]
+	private onToggleCallbacks: updateCallback[]
+	private intervalId: number | undefined
 
-	constructor(settings: BetterPomodoroPluginSettings) {
-		this.timeInSecondsLeft = this.calculateTimeLeft();
-		this.isRunning = false;
+	constructor(settings: PluginSettings) {
+		// It's important to make sure that seetings are assigned first since
+		// they can be used for other props initialization
+		this.settings = settings
 
-		this.clockWorker = new Worker();
-		this.settings = settings;
+		// public props
+		this.isRunning = false
+
+		// private props
+		// TODO: load the previous mode instead
+		this.mode = "work"
+		this.onTickCallbacks = []
+		this.onToggleCallbacks = []
+
+		this.resetSecondsCount(true)
+	}
+
+	private resetSecondsCount(tryRecover?: boolean) {
+		// Set seconds count
+		// First, try to restore from previous session if it wasn't explicitly stopped
+		// Otherwise, simply use a value from settings
+
+		// TODO: recover previous session
+
+		this.secondsLeft =
+			this.mode == "work"
+				? this.settings.workDurationSecs
+				: this.settings.breakDurationSecs
+	}
+
+	// TODO: if a property is not private, it can be changed
+	getIsRunning() {
+		return this.isRunning
+	}
+
+	getModeTotalSecs(): number {
+		if (this.mode == "work") {
+			return this.settings.workDurationSecs
+		}
+		return this.settings.breakDurationSecs
+	}
+
+	getCurrentMode(): string {
+		return this.mode
+	}
+
+	getTimeLeft(): {
+		secs: number
+		HFTime: string
+	} {
+		let seconds = this.secondsLeft
+		return {
+			secs: seconds,
+			HFTime: secondsToHF(seconds),
+		}
+	}
+
+	registerUpdateCallback(type: "tick" | "toggle", cb: updateCallback): void {
+		if (type == "tick") {
+			this.onTickCallbacks.push(cb)
+		} else if (type == "toggle") {
+			this.onToggleCallbacks.push(cb)
+		}
 	}
 
 	toggle(): void {
+		this.runOnToggleCallbacks()
+
 		if (this.isRunning) {
-			this.stop();
+			this.stop()
 		} else {
-			this.start();
+			this.start()
 		}
-	}
-
-	private updateTimeLeftInSeconds(): void {
-		this.timeInSecondsLeft -= 1;
-	}
-
-	private calculateTimeLeft(): number {
-		let workDurationParsed = parseInt(this.settings.workDuration);
-		return workDurationParsed;
 	}
 
 	private start(): void {
-		this.isRunning = true;
+		this.isRunning = true
 
-		let durationInSeconds = this.getDuration();
-		let message: messageToWorker = {
-			action: "start",
-			durationInSeconds: durationInSeconds,
-		};
+		const oneSecondMillis = 1000
 
-		this.clockWorker.postMessage(message);
+		// Use window.setInterval explicitly to avoid TS confusing
+		// between NodeJS and Browser API
+		this.intervalId = window.setInterval(() => {
+			this.tick()
+		}, oneSecondMillis)
 	}
 
-	private getDuration(): number {
-		// TODO: get break duration as well
-		let durationString = this.settings.workDuration;
-		let durationInMinutes = parseInt(durationString);
-		return durationInMinutes;
-	}
-
-	private stop(): void {
-		this.isRunning = false;
-		let message: messageToWorker = {
-			action: "stop",
-		};
-		this.clockWorker.postMessage(message);
-	}
-
-	private pause(): void { }
-
-	private notify(): void {
-		// TODO: Add sound to both system and obsidian notifications
-
-		let notificationText = "Time is up";
-
-		if (this.settings.areSystemNotificationsPreferred) {
-			utils.showSystemNotification(notificationText);
-		} else {
-			utils.showObsidianNotification(notificationText);
+	private tick(): void {
+		this.secondsLeft--
+		this.runOnTickCallbacks()
+		if (this.secondsLeft == 0) {
+			notify("Time's up")
+			if (!this.settings.continueAfterTimeIsUp) {
+				this.switch()
+			}
 		}
 	}
 
-	destroy(): void {
-		this.pause();
-		this.clockWorker.terminate();
+	switch(): void {
+		this.mode = this.mode == "work" ? "break" : "work"
+		this.reset()
 	}
+
+	reset(): void {
+		this.stop()
+		this.resetSecondsCount()
+		this.runOnTickCallbacks()
+		this.runOnToggleCallbacks()
+	}
+
+	private stop(): void {
+		this.isRunning = false
+
+		window.clearInterval(this.intervalId)
+	}
+
+	private runOnTickCallbacks() {
+		let timeLeft = this.getTimeLeft()
+		this.onTickCallbacks.forEach((cb) => cb(timeLeft.HFTime))
+	}
+
+	private runOnToggleCallbacks() {
+		this.onToggleCallbacks.forEach((cb) => cb())
+	}
+
+	destroy(): void {
+		// TODO: add time left saving
+	}
+}
+
+export function secondsToHF(secondsTotal: number) {
+	// Add a minus sign to the string if the seconds amount is negative
+	// and make the variable positive to avoid getting minus signs when
+	// dividing
+	var humanTime: string
+	if (secondsTotal < 0) {
+		humanTime = "-"
+		secondsTotal *= -1
+	} else {
+		humanTime = ""
+	}
+
+	const secondsLeft = secondsTotal % 60
+	const minutesTotal = (secondsTotal - secondsLeft) / 60
+	const minutesLeft = minutesTotal % 60
+	const hoursTotal = (minutesTotal - minutesLeft) / 60
+
+	const paddedWithZerosTimeUnits = [hoursTotal, minutesLeft, secondsLeft].map(
+		function padTimeUnitsWithZeros(timeUnit: number) {
+			let paddedTimeUnit = String(timeUnit).padStart(2, "00")
+			return paddedTimeUnit
+		},
+	)
+
+	humanTime += paddedWithZerosTimeUnits.join(":")
+
+	return humanTime
 }
