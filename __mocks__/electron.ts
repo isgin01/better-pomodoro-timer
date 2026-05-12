@@ -4,6 +4,6 @@ export var remote = {
 			show() {},
 			on() {},
 			close() {},
-		};
+		}
 	},
-};
+}

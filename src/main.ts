@@ -1,69 +1,72 @@
-import { Plugin } from "obsidian";
+import { Plugin } from "obsidian"
 
-import { DEFAULT_SETTINGS, PluginSettings, BetterPomodoroSettingsTab } from "./settings";
-import Timer from "./timer";
-import * as statusBar from "./status-bar";
-import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "./custom-view";
+import {
+	DEFAULT_SETTINGS,
+	PluginSettings,
+	BetterPomodoroSettingsTab,
+} from "./settings"
+import Timer from "./timer"
+import * as statusBar from "./status-bar"
+import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "./custom-view"
 
 export default class BetterPomodoroPlugin extends Plugin {
 	// @ts-ignore
-	settings: PluginSettings;
+	settings: PluginSettings
 	// @ts-ignore
-	timer: Timer;
+	timer: Timer
 	// @ts-ignore
-	statusBarItem: HTMLElement;
+	statusBarItem: HTMLElement
 	// @ts-ignore
-	customView: CustomView;
+	customView: CustomView
 
 	async onload() {
-		await this.loadSettings();
+		await this.loadSettings()
 
-		this.timer = new Timer(this.settings);
+		this.timer = new Timer(this.settings)
 
 		this.registerView(PLUGIN_CUSTOM_VIEW_ID, (leaf) => {
 			this.customView = new CustomView(leaf, this.timer)
 			return this.customView
-		});
+		})
 
 		// this.loadCustomView()
 
-		this.statusBarItem = this.addStatusBarItem();
-		statusBar.build(this.statusBarItem, this.timer);
-		statusBar.alterVisibility(this.settings.showStatusBar, this.statusBarItem)
+		this.statusBarItem = this.addStatusBarItem()
+		statusBar.build(this.statusBarItem, this.timer)
+		statusBar.alterVisibility(
+			this.settings.showStatusBar,
+			this.statusBarItem,
+		)
 
 		this.addCommand({
 			id: "toggle",
 			name: "Toggle timer",
 			callback: () => {
-				this.timer.toggle();
+				this.timer.toggle()
 			},
-		});
+		})
 
 		this.addCommand({
 			id: "switch",
 			name: "Switch mode",
 			callback: () => {
-				this.timer.switch();
+				this.timer.switch()
 			},
-		});
+		})
 
 		this.addCommand({
 			id: "reset",
 			name: "Reset",
 			callback: () => {
-				this.timer.reset();
+				this.timer.reset()
 			},
-		});
+		})
 
-
-		this.addSettingTab(
-			new BetterPomodoroSettingsTab(this.app, this),
-		);
+		this.addSettingTab(new BetterPomodoroSettingsTab(this.app, this))
 	}
 
-
 	onunload() {
-		this.timer.destroy();
+		this.timer.destroy()
 	}
 
 	private async loadSettings() {
@@ -71,15 +74,15 @@ export default class BetterPomodoroPlugin extends Plugin {
 			{},
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<PluginSettings>,
-		);
+		)
 	}
 
 	loadCustomView() {
 		if (this.settings.showCustomView) {
-			var { workspace } = this.app;
+			var { workspace } = this.app
 			let leaves = workspace.getLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
 			if (!leaves.length) {
-				let leaf = workspace.getRightLeaf(false);
+				let leaf = workspace.getRightLeaf(false)
 				// TODO: is it ok to put ? here
 				leaf?.setViewState({
 					type: PLUGIN_CUSTOM_VIEW_ID,
@@ -91,7 +94,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 	}
 
 	hideCustomView() {
-		var { workspace } = this.app;
+		var { workspace } = this.app
 		// var leaves = workspace.getLeavesOfType(PLUGIN_CUSTOM_VIEW_ID);
 		// leaves.map((l) => { l.detach() })
 		workspace.detachLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
@@ -102,6 +105,6 @@ export default class BetterPomodoroPlugin extends Plugin {
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
+		await this.saveData(this.settings)
 	}
 }

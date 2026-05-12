@@ -1,6 +1,7 @@
 {
 	"compilerOptions": {
 		"paths": {"*": ["./src/*"]},
+		"moduleResolution": "node",
 		"inlineSourceMap": true,
 		"inlineSources": true,
 		"module": "ESNext",
