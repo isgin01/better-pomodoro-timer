@@ -1,5 +1,5 @@
 import { PluginSettings } from "settings"
-import * as utils from "./utils"
+import { notify } from "./utils"
 
 export type updateCallback = (time?: string) => void
 
@@ -14,6 +14,8 @@ export type TimeLeft = {
 }
 
 export default class Timer {
+	isRunning: boolean
+
 	private readonly settings: PluginSettings
 	private mode: Mode
 	private secondsLeft: number
@@ -21,8 +23,6 @@ export default class Timer {
 	private onToggleCallbacks: updateCallback[]
 
 	private interval: NodeJS.Timer | undefined
-
-	isRunning: boolean
 
 	constructor(settings: PluginSettings) {
 		// It's important to make sure that seetings are assigned first since
@@ -35,20 +35,32 @@ export default class Timer {
 		// private props
 		// TODO: load the previous mode instead
 		this.mode = Mode.work
-		this.secondsLeft = this.getSecondsLeft()
 		this.onTickCallbacks = []
 		this.onToggleCallbacks = []
+
+		this.resetSecondsCount(true)
+	}
+
+	private resetSecondsCount(tryRecover?: boolean) {
+		// Set seconds count
+		// First, try to restore from previous session if it wasn't explicitly stopped
+		// Otherwise, simply use a value from settings
+
+		// TODO: recover previous session
+
+		this.secondsLeft =
+			this.mode == Mode.work
+				? this.settings.workDurationSecs
+				: this.settings.breakDurationSecs
 	}
 
 	getCurrentMode(): string {
 		return Mode[this.mode]
 	}
 
-	// TODO: decide if you need to leave this method here or use utils instead.
-	// I think it doesn't violate DRY. Instead, it helps to avoid repeating code.
 	getTimeLeft(): TimeLeft {
 		let seconds = this.secondsLeft
-		let HFTime = utils.secondsToHF(seconds)
+		let HFTime = secondsToHF(seconds)
 		return {
 			seconds,
 			HFTime: HFTime,
@@ -65,7 +77,6 @@ export default class Timer {
 
 	destroy(): void {
 		// TODO: add time left saving
-		this.stop()
 	}
 
 	toggle(): void {
@@ -92,37 +103,11 @@ export default class Timer {
 		this.secondsLeft -= 1
 		this.runOnTickCallbacks()
 		if (this.secondsLeft == 0) {
-			this.timeIsUp()
+			notify("Time's up")
+			if (!this.settings.continueAfterTimeIsUp) {
+				this.switch()
+			}
 		}
-	}
-
-	private timeIsUp(): void {
-		var notificationText = "Time is up"
-
-		if (this.settings.continueAfterTimeIsUp) {
-			// TODO: play sound, but don't stop
-			this.notify(notificationText)
-		} else {
-			this.notify(notificationText)
-
-			this.switch()
-		}
-	}
-
-	private notify(notificationText: string): void {
-		// TODO: Add sound to both system and obsidian notifications
-
-		if (this.settings.areSystemNotificationsPreferred) {
-			utils.systemNotify(notificationText)
-		} else {
-			utils.obsidianNotify(notificationText)
-		}
-	}
-
-	private stop(): void {
-		this.isRunning = false
-
-		clearInterval(this.interval)
 	}
 
 	switch(): void {
@@ -132,25 +117,15 @@ export default class Timer {
 
 	reset(): void {
 		this.stop()
-		this.secondsLeft = this.getSecondsLeft()
+		this.resetSecondsCount()
 		this.runOnTickCallbacks()
 		this.runOnToggleCallbacks()
 	}
 
-	private getSecondsLeft(): number {
-		if (this.mode == Mode.work) {
-			var durationMinutesUnparsed = this.settings.workDurationInMinutes
-		} else {
-			var durationMinutesUnparsed = this.settings.breakDurationInMinutes
-		}
+	private stop(): void {
+		this.isRunning = false
 
-		// TODO: see if it makes sense to create a helper func that would
-		// convert string minutes to integer seconds
-
-		let durationMinutes = Number(durationMinutesUnparsed)
-		let durationSeconds = durationMinutes * 60
-
-		return durationSeconds
+		clearInterval(this.interval)
 	}
 
 	private runOnTickCallbacks() {
@@ -161,4 +136,33 @@ export default class Timer {
 	private runOnToggleCallbacks() {
 		this.onToggleCallbacks.forEach((cb) => cb())
 	}
+}
+
+export function secondsToHF(secondsTotal: number) {
+	// Add a minus sign to the string if the seconds amount is negative
+	// and make the variable positive to avoid getting minus signs when
+	// dividing
+	var humanTime: string
+	if (secondsTotal < 0) {
+		humanTime = "-"
+		secondsTotal *= -1
+	} else {
+		humanTime = ""
+	}
+
+	const secondsLeft = secondsTotal % 60
+	const minutesTotal = (secondsTotal - secondsLeft) / 60
+	const minutesLeft = minutesTotal % 60
+	const hoursTotal = (minutesTotal - minutesLeft) / 60
+
+	const paddedWithZerosTimeUnits = [hoursTotal, minutesLeft, secondsLeft].map(
+		function padTimeUnitsWithZeros(timeUnit: number) {
+			let paddedTimeUnit = String(timeUnit).padStart(2, "00")
+			return paddedTimeUnit
+		},
+	)
+
+	humanTime += paddedWithZerosTimeUnits.join(":")
+
+	return humanTime
 }

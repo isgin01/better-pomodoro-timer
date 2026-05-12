@@ -6,9 +6,9 @@ A plugin for [Obsidian](https://obsidian.md/), a note-taking app.
 
 It adds a pomodoro timer functionality to the app.
 
-## Screenshots
+## Why does it exist?
 
-## Why I made it
+## Screenshots
 
 ## Alternatives
 

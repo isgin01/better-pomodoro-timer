@@ -4,18 +4,18 @@ import * as statusBar from "./status-bar"
 
 export type PluginSettings = {
 	// TODO: do they have to be strings?
-	workDurationInMinutes: string
-	breakDurationInMinutes: string
-	areSystemNotificationsPreferred: boolean
+	workDurationSecs: number
+	breakDurationSecs: number
+	systemNotificationsPreferred: boolean
 	continueAfterTimeIsUp: boolean
 	showStatusBar: boolean
 	showCustomView: boolean
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
-	workDurationInMinutes: "60",
-	breakDurationInMinutes: "15",
-	areSystemNotificationsPreferred: false,
+	workDurationSecs: 50 * 60,
+	breakDurationSecs: 10 * 60,
+	systemNotificationsPreferred: false,
 	continueAfterTimeIsUp: false,
 	// Some may prefer using just hotkeys without graphic view.
 	showCustomView: true,
@@ -78,10 +78,11 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl).setName("Work duration").addText((text) => {
 			text.setPlaceholder("Enter time in minutes")
-				.setValue(this.plugin.settings.workDurationInMinutes)
-				.onChange(async (minutes: string) => {
-					if (validateNumericInput(minutes)) {
-						this.plugin.settings.workDurationInMinutes = minutes
+				.setValue(String(this.plugin.settings.breakDurationSecs / 60))
+				.onChange(async (i: string) => {
+					let minutes = validateNumericInput(i)
+					if (minutes) {
+						this.plugin.settings.workDurationSecs = minutes * 60
 						await this.plugin.saveSettings()
 					}
 				})
@@ -89,10 +90,11 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl).setName("Break duration").addText((text) => {
 			text.setPlaceholder("Enter time in minutes")
-				.setValue(this.plugin.settings.breakDurationInMinutes)
-				.onChange(async (minutes: string) => {
-					if (validateNumericInput(minutes)) {
-						this.plugin.settings.breakDurationInMinutes = minutes
+				.setValue(String(this.plugin.settings.breakDurationSecs / 60))
+				.onChange(async (i: string) => {
+					let minutes = validateNumericInput(i)
+					if (minutes) {
+						this.plugin.settings.breakDurationSecs = minutes * 60
 						await this.plugin.saveSettings()
 					}
 				})
@@ -115,11 +117,9 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 			.setName("Prefer system notification")
 			.addToggle((component: ToggleComponent) => {
 				component
-					.setValue(
-						this.plugin.settings.areSystemNotificationsPreferred,
-					)
+					.setValue(this.plugin.settings.systemNotificationsPreferred)
 					.onChange(async (newValue: boolean) => {
-						this.plugin.settings.areSystemNotificationsPreferred =
+						this.plugin.settings.systemNotificationsPreferred =
 							newValue
 						await this.plugin.saveSettings()
 					})
@@ -128,9 +128,10 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 }
 
 // Check if given value is a valid amount of minutes
-export function validateNumericInput(m: string): boolean {
-	if (isNaN(Number(m))) {
+export function validateNumericInput(i: string): false | number {
+	let num = Number(i)
+	if (isNaN(num)) {
 		return false
 	}
-	return true
+	return num
 }
