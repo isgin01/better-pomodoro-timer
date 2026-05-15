@@ -2,10 +2,10 @@ import { Plugin } from "obsidian"
 
 import {
 	DEFAULT_SETTINGS,
-	PluginSettings,
+	type PluginSettings,
 	BetterPomodoroSettingsTab,
 } from "./settings"
-import Timer from "./timer"
+import { Timer } from "./timer"
 import * as statusBar from "./status-bar"
 import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "./custom-view"
 

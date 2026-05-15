@@ -1,4 +1,4 @@
-import { PluginSettings } from "settings"
+import { type PluginSettings } from "settings"
 import { notify } from "./utils"
 
 export type updateCallback = (time?: string) => void
@@ -13,7 +13,7 @@ export type TimeLeft = {
 	HFTime: string
 }
 
-export default class Timer {
+export class Timer {
 	isRunning: boolean
 
 	private readonly settings: PluginSettings

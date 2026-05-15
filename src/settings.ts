@@ -1,5 +1,10 @@
-import { App, PluginSettingTab, Setting, ToggleComponent } from "obsidian"
-import BetterPomodoroPlugin from "./main"
+import {
+	type App,
+	type ToggleComponent,
+	PluginSettingTab,
+	Setting,
+} from "obsidian"
+import type BetterPomodoroPlugin from "./main"
 import * as statusBar from "./status-bar"
 
 export type PluginSettings = {

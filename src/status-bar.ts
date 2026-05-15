@@ -1,5 +1,5 @@
 import { Menu } from "obsidian"
-import Timer from "./timer"
+import { type Timer } from "./timer"
 
 export function build(el: HTMLElement, timer: Timer) {
 	// Make the status bar clickable
