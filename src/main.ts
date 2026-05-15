@@ -10,13 +10,9 @@ import * as statusBar from "./status-bar"
 import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "./custom-view"
 
 export default class BetterPomodoroPlugin extends Plugin {
-	// @ts-ignore
 	settings: PluginSettings
-	// @ts-ignore
 	timer: Timer
-	// @ts-ignore
 	statusBarItem: HTMLElement
-	// @ts-ignore
 	customView: CustomView
 
 	async onload() {
@@ -40,7 +36,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 
 		this.addCommand({
 			id: "toggle",
-			name: "Toggle timer",
+			name: "Toggle",
 			callback: () => {
 				this.timer.toggle()
 			},
@@ -48,7 +44,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 
 		this.addCommand({
 			id: "switch",
-			name: "Switch mode",
+			name: "Switch",
 			callback: () => {
 				this.timer.switch()
 			},

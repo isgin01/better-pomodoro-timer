@@ -3,26 +3,14 @@ import { notify } from "./utils"
 
 export type updateCallback = (time?: string) => void
 
-export enum Mode {
-	work,
-	break,
-}
-
-export type TimeLeft = {
-	seconds: number
-	HFTime: string
-}
-
 export class Timer {
-	isRunning: boolean
-
+	private isRunning: boolean
 	private readonly settings: PluginSettings
-	private mode: Mode
+	private mode: "work" | "break"
 	private secondsLeft: number
 	private onTickCallbacks: updateCallback[]
 	private onToggleCallbacks: updateCallback[]
-
-	private interval: NodeJS.Timer | undefined
+	private intervalId: number | undefined
 
 	constructor(settings: PluginSettings) {
 		// It's important to make sure that seetings are assigned first since
@@ -34,7 +22,7 @@ export class Timer {
 
 		// private props
 		// TODO: load the previous mode instead
-		this.mode = Mode.work
+		this.mode = "work"
 		this.onTickCallbacks = []
 		this.onToggleCallbacks = []
 
@@ -49,21 +37,35 @@ export class Timer {
 		// TODO: recover previous session
 
 		this.secondsLeft =
-			this.mode == Mode.work
+			this.mode == "work"
 				? this.settings.workDurationSecs
 				: this.settings.breakDurationSecs
 	}
 
-	getCurrentMode(): string {
-		return Mode[this.mode]
+	// TODO: if a property is not private, it can be changed
+	getIsRunning() {
+		return this.isRunning
 	}
 
-	getTimeLeft(): TimeLeft {
+	getModeTotalSecs(): number {
+		if (this.mode == "work") {
+			return this.settings.workDurationSecs
+		}
+		return this.settings.breakDurationSecs
+	}
+
+	getCurrentMode(): string {
+		return this.mode
+	}
+
+	getTimeLeft(): {
+		secs: number
+		HFTime: string
+	} {
 		let seconds = this.secondsLeft
-		let HFTime = secondsToHF(seconds)
 		return {
-			seconds,
-			HFTime: HFTime,
+			secs: seconds,
+			HFTime: secondsToHF(seconds),
 		}
 	}
 
@@ -73,10 +75,6 @@ export class Timer {
 		} else if (type == "toggle") {
 			this.onToggleCallbacks.push(cb)
 		}
-	}
-
-	destroy(): void {
-		// TODO: add time left saving
 	}
 
 	toggle(): void {
@@ -92,15 +90,17 @@ export class Timer {
 	private start(): void {
 		this.isRunning = true
 
-		const oneSecondInMilliseconds = 1000
+		const oneSecondMillis = 1000
 
-		this.interval = setInterval(() => {
+		// Use window.setInterval explicitly to avoid TS confusing
+		// between NodeJS and Browser API
+		this.intervalId = window.setInterval(() => {
 			this.tick()
-		}, oneSecondInMilliseconds)
+		}, oneSecondMillis)
 	}
 
 	private tick(): void {
-		this.secondsLeft -= 1
+		this.secondsLeft--
 		this.runOnTickCallbacks()
 		if (this.secondsLeft == 0) {
 			notify("Time's up")
@@ -111,7 +111,7 @@ export class Timer {
 	}
 
 	switch(): void {
-		this.mode = this.mode == Mode.work ? Mode.break : Mode.work
+		this.mode = this.mode == "work" ? "break" : "work"
 		this.reset()
 	}
 
@@ -125,7 +125,7 @@ export class Timer {
 	private stop(): void {
 		this.isRunning = false
 
-		clearInterval(this.interval)
+		window.clearInterval(this.intervalId)
 	}
 
 	private runOnTickCallbacks() {
@@ -135,6 +135,10 @@ export class Timer {
 
 	private runOnToggleCallbacks() {
 		this.onToggleCallbacks.forEach((cb) => cb())
+	}
+
+	destroy(): void {
+		// TODO: add time left saving
 	}
 }
 

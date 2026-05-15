@@ -8,13 +8,13 @@ import type BetterPomodoroPlugin from "./main"
 import * as statusBar from "./status-bar"
 
 export type PluginSettings = {
-	// TODO: do they have to be strings?
 	workDurationSecs: number
 	breakDurationSecs: number
 	systemNotificationsPreferred: boolean
 	continueAfterTimeIsUp: boolean
 	showStatusBar: boolean
 	showCustomView: boolean
+	customNotificationSoundPath: string
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -22,9 +22,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	breakDurationSecs: 10 * 60,
 	systemNotificationsPreferred: false,
 	continueAfterTimeIsUp: false,
-	// Some may prefer using just hotkeys without graphic view.
 	showCustomView: true,
 	showStatusBar: true,
+	customNotificationSoundPath: "",
 }
 
 export class BetterPomodoroSettingsTab extends PluginSettingTab {
@@ -79,16 +79,22 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 					})
 			})
 
-		new Setting(containerEl).setName("Pomodoro options").setHeading()
+		new Setting(containerEl).setName("Timer options").setHeading()
 
 		new Setting(containerEl).setName("Work duration").addText((text) => {
 			text.setPlaceholder("Enter time in minutes")
-				.setValue(String(this.plugin.settings.breakDurationSecs / 60))
+				.setValue(String(this.plugin.settings.workDurationSecs / 60))
 				.onChange(async (i: string) => {
 					let minutes = validateNumericInput(i)
 					if (minutes) {
 						this.plugin.settings.workDurationSecs = minutes * 60
 						await this.plugin.saveSettings()
+
+						this.plugin.reflectSettingsChange((ctx) => {
+							if (!ctx.timer.isRunning) {
+								ctx.timer.reset()
+							}
+						})
 					}
 				})
 		})
@@ -101,6 +107,12 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 					if (minutes) {
 						this.plugin.settings.breakDurationSecs = minutes * 60
 						await this.plugin.saveSettings()
+
+						this.plugin.reflectSettingsChange((ctx) => {
+							if (!ctx.timer.isRunning) {
+								ctx.timer.reset()
+							}
+						})
 					}
 				})
 		})
@@ -129,6 +141,16 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings()
 					})
 			})
+
+		// TODO: sound toggle
+
+		// TODO: sound path
+		// new Settings(containerEl)
+		// 	.setName("Custom notification sound")
+		// 	.setValue("")
+		// 	.setPlaceholder("path to the sound")
+
+		// TODO: add button to check the sound
 	}
 }
 

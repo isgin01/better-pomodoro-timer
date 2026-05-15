@@ -10,6 +10,7 @@
 	margin: 10px auto;
 	width: 140px;
 	height: 140px;
+	transform: rotate(-90deg);
 }
 
 #circle1 {
@@ -18,6 +19,13 @@
 
 #circle2 {
 	fill: var(--background-secondary);
+}
+
+#circle3 {
+	stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
+	stroke-dashoffset: 440;
+	stroke: green;
+	/* transition: all 0.2s linear; */
 }
 
 .custom-view-container {
@@ -39,8 +47,8 @@
 }
 
 .btn-container button {
-    background: none;
-    border: none;
-    outline: none;
-    box-shadow: none;
+	background: none;
+	border: none;
+	outline: none;
+	box-shadow: none;
 }

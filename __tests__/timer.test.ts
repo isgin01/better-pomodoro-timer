@@ -1,7 +1,7 @@
-import Timer, { secondsToHF } from "../src/timer"
+import { Timer, secondsToHF } from "../src/timer"
 import { PluginSettings } from "../src/settings"
 
-const oneSecondMilliseconds = 1_000
+const oneSecondMillis = 1_000
 
 describe("proper timer behaviour", () => {
 	let settings: PluginSettings = {
@@ -19,8 +19,8 @@ describe("proper timer behaviour", () => {
 	})
 
 	it("public prop init", () => {
-		let secondsLeft = timer.getTimeLeft().seconds
-		expect(secondsLeft).toBe(parseInt(settings.workDurationInMinutes) * 60)
+		let secondsLeft = timer.getTimeLeft().secs
+		expect(secondsLeft).toBe(settings.workDurationSecs)
 		expect(timer.isRunning).toBe(false)
 	})
 
@@ -32,10 +32,9 @@ describe("proper timer behaviour", () => {
 
 		expect(setInterval).toHaveBeenCalledTimes(1)
 
-		// TODO: replace all 1_000 with a single constant
 		expect(setInterval).toHaveBeenCalledWith(
 			expect.any(Function),
-			oneSecondMilliseconds,
+			oneSecondMillis,
 		)
 	})
 
@@ -53,20 +52,20 @@ describe("proper timer behaviour", () => {
 		jest.useFakeTimers()
 		timer.toggle()
 
-		jest.advanceTimersByTime(oneSecondMilliseconds)
+		jest.advanceTimersByTime(oneSecondMillis)
 		expect(onTickCallback).toHaveBeenCalledTimes(1)
-		jest.advanceTimersByTime(oneSecondMilliseconds)
+		jest.advanceTimersByTime(oneSecondMillis)
 		expect(onTickCallback).toHaveBeenCalledTimes(2)
-		jest.advanceTimersByTime(oneSecondMilliseconds * 60)
+		jest.advanceTimersByTime(oneSecondMillis * 60)
 		expect(onTickCallback).toHaveBeenCalledTimes(62)
-		jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60)
+		jest.advanceTimersByTime(oneSecondMillis * 60 * 60)
 		expect(onTickCallback).toHaveBeenCalledTimes(3662)
-		jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60 * 10)
+		jest.advanceTimersByTime(oneSecondMillis * 60 * 60 * 10)
 		expect(onTickCallback).toHaveBeenCalledTimes(39662)
 
 		// Must not be called after timer is stopped
 		timer.toggle()
-		jest.advanceTimersByTime(oneSecondMilliseconds * 60)
+		jest.advanceTimersByTime(oneSecondMillis * 60)
 		expect(onTickCallback).toHaveBeenCalledTimes(39662)
 	})
 
@@ -84,7 +83,7 @@ describe("proper timer behaviour", () => {
 		}
 		let timer = new Timer(settings)
 		timer.toggle()
-		jest.advanceTimersByTime(oneSecondMilliseconds)
+		jest.advanceTimersByTime(oneSecondMillis)
 		timer.toggle()
 
 		let expectedTimeLeft = {
@@ -96,7 +95,7 @@ describe("proper timer behaviour", () => {
 
 		// Wait for some time
 
-		jest.advanceTimersByTime(oneSecondMilliseconds * 1000)
+		jest.advanceTimersByTime(oneSecondMillis * 1000)
 
 		// Must still be the same
 
@@ -122,49 +121,49 @@ it("proper time display", () => {
 	let timer = new Timer(settings)
 	timer.toggle()
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * 1)
+	jest.advanceTimersByTime(oneSecondMillis * 1)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 1),
 		HFTime: "23:59:59",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * 60)
+	jest.advanceTimersByTime(oneSecondMillis * 60)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 60),
 		HFTime: "23:58:59",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60)
+	jest.advanceTimersByTime(oneSecondMillis * 60 * 60)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 60 * 60),
 		HFTime: "22:58:59",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60 * 22)
+	jest.advanceTimersByTime(oneSecondMillis * 60 * 60 * 22)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 60 * 60 * 22),
 		HFTime: "00:58:59",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * (60 * 58 + 59))
+	jest.advanceTimersByTime(oneSecondMillis * (60 * 58 + 59))
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 60 * 58 + 59),
 		HFTime: "00:00:00",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds)
+	jest.advanceTimersByTime(oneSecondMillis)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 1),
 		HFTime: "-00:00:01",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * 60)
+	jest.advanceTimersByTime(oneSecondMillis * 60)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 60),
 		HFTime: "-00:01:01",
 	})
 
-	jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60)
+	jest.advanceTimersByTime(oneSecondMillis * 60 * 60)
 	expect(timer.getTimeLeft()).toStrictEqual({
 		seconds: (secondsLeft -= 60 * 60),
 		HFTime: "-01:01:01",
@@ -207,15 +206,15 @@ describe("switch behavior", () => {
 		timer.toggle()
 
 		// not yet
-		jest.advanceTimersByTime(oneSecondMilliseconds * 60 * 60 - 1)
-		expect(timer.getTimeLeft().seconds).toBe(1)
+		jest.advanceTimersByTime(oneSecondMillis * 60 * 60 - 1)
+		expect(timer.getTimeLeft().secs).toBe(1)
 		expect(timer.isRunning).toBe(true)
 		expect(timer.switch).toHaveBeenCalledTimes(0)
 		expect(onTickCallback).toHaveBeenCalledTimes(60 * 60 - 1)
 
 		// now it must change
-		jest.advanceTimersByTime(oneSecondMilliseconds)
-		expect(timer.getTimeLeft().seconds).toBe(60 * 10)
+		jest.advanceTimersByTime(oneSecondMillis)
+		expect(timer.getTimeLeft().secs).toBe(60 * 10)
 		expect(timer.isRunning).toBe(false)
 		expect(timer.switch).toHaveBeenCalledTimes(1)
 		expect(onTickCallback).toHaveBeenCalledTimes(60 * 60 + 1)
