@@ -13,83 +13,89 @@ export class CustomView extends ItemView {
 	private resetBtn: HTMLButtonElement
 	private switchBtn: HTMLButtonElement
 
-	private remainingTimeCircle: SVGElement
+	private remainingTimeCircle: SVGCircleElement
 	private elapsedTimeCircle: SVGCircleElement
 
 	constructor(leaf: WorkspaceLeaf, timer: Timer, settings: PluginSettings) {
 		super(leaf)
-		this.timer = timer
 		this.containerEl.empty()
-		this.icon = "timer"
+
+		this.timer = timer
 		this.settings = settings
 
+		// Set view icon
+		this.icon = "timer"
+
+		// Parent container
 		var container = this.containerEl.createDiv({
 			cls: "custom-view-container",
 		})
-		var animationContainer = container.createDiv({
-			cls: "animation-container",
-		})
-		var svg = animationContainer.createSvg("svg")
 
-		// The order is important to make the elapsed circle appear above
-		// the default one
+		// Clock face
+
+		var svg = container
+			.createDiv({
+				cls: "animation-container",
+			})
+			.createSvg("svg")
 		this.remainingTimeCircle = svg.createSvg("circle", {
 			attr: { id: "default", cx: 70, cy: 70, r: 70, "stroke-width": 2 },
 		})
-
 		this.elapsedTimeCircle = svg.createSvg("circle", {
 			attr: { id: "elapsed", cx: 70, cy: 70, r: 60, "stroke-width": 20 },
 		})
 		this.setElapsedCircleReach()
-
 		svg.createSvg("circle", {
 			attr: { id: "bg", cx: 70, cy: 70, r: 60, "stroke-width": 8 },
 		})
-
 		this.setColors()
 
 		// TODO: work/break text
-		// TODO: hover and click effects
+
 		var timeContainer = container.createSpan({ cls: "time-container" })
 		timeContainer.innerHTML = timer.getTimeLeft().HFTime
-		var btnContainer = container.createDiv({ cls: "btn-container" })
-		this.toggleBtn = btnContainer.createEl("button", {
-			text: "Toggle",
-			cls: "toggle",
-		})
-		this.resetBtn = btnContainer.createEl("button", {
-			text: "Reset",
-			cls: "reset",
-		})
-		this.switchBtn = btnContainer.createEl("button", {
-			text: "Switch",
-			cls: "switch",
-		})
-
-		this.toggleBtn.addEventListener("click", () => {
-			this.timer.toggle()
-			this.updateToggleBtnIcon()
-		})
-		this.updateToggleBtnIcon()
-
-		this.resetBtn.addEventListener("click", () => {
-			this.timer.reset()
-			this.updateToggleBtnIcon()
-		})
-		setIcon(this.resetBtn, "reset")
-
-		this.switchBtn.addEventListener("click", () => {
-			this.timer.switch()
-			this.updateToggleBtnIcon()
-		})
-		setIcon(this.switchBtn, "switch")
-
 		this.timer.registerUpdateCallback("tick", (HFTime: string) => {
 			timeContainer.innerText = HFTime
 			this.setElapsedCircleReach()
 		})
+
+		// Buttons
+
+		// TODO: hover and click effects
+
+		var btnContainer = container.createDiv({ cls: "btn-container" })
+
+		this.toggleBtn = btnContainer.createEl("button", {
+			text: "Toggle",
+			cls: "toggle",
+		})
+		this.setToggleBtnIcon()
+		this.toggleBtn.addEventListener("click", () => {
+			this.timer.toggle()
+			this.setToggleBtnIcon()
+		})
 		this.timer.registerUpdateCallback("toggle", () => {
-			this.updateToggleBtnIcon()
+			this.setToggleBtnIcon()
+		})
+
+		this.resetBtn = btnContainer.createEl("button", {
+			text: "Reset",
+			cls: "reset",
+		})
+		setIcon(this.resetBtn, "reset")
+		this.resetBtn.addEventListener("click", () => {
+			this.timer.reset()
+			this.setToggleBtnIcon()
+		})
+
+		this.switchBtn = btnContainer.createEl("button", {
+			text: "Switch",
+			cls: "switch",
+		})
+		setIcon(this.switchBtn, "switch")
+		this.switchBtn.addEventListener("click", () => {
+			this.timer.switch()
+			this.setToggleBtnIcon()
 		})
 	}
 
@@ -104,7 +110,7 @@ export class CustomView extends ItemView {
 		var m = this.timer.getCurrentMode()
 	}
 
-	private updateToggleBtnIcon() {
+	private setToggleBtnIcon() {
 		setIcon(this.toggleBtn, this.timer.getIsRunning() ? "pause" : "play")
 	}
 
