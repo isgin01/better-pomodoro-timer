@@ -20,18 +20,19 @@ it("initialization", () => {
 	var element = new FakeStatusBar()
 	new StatusBar(element, timer)
 
-	expect(element.innerHTML).toContain("<span>00:40:00</span>")
+	expect(element.innerHTML).toBe("")
+	expect(element.innerText).toBe("00:40:00")
 
 	timer.toggle()
 	expect(timer.mode).toBe("work")
 	expect(timer.running).toBe(true)
 
 	jest.advanceTimersByTime(1000 * 60)
-	expect(element.innerHTML).toContain("<span>00:39:00</span>")
+	expect(element.innerText).toBe("00:39:00")
 	jest.advanceTimersByTime(1000 * 60 * 39)
-	expect(element.innerHTML).toContain("<span>00:00:00</span>")
+	expect(element.innerText).toBe("00:00:00")
 	jest.advanceTimersByTime(1000 * 60 * 10)
-	expect(element.innerHTML).toContain("<span>-00:10:00</span>")
+	expect(element.innerText).toBe("-00:10:00")
 })
 
 it("clicks", () => {

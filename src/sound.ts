@@ -4,9 +4,5 @@ var DEFAULT_SOUND =
 
 export function playSound(sound: string) {
 	// Custom can be an empty string
-	if (sound) {
-		new Audio(sound).play()
-	} else {
-		new Audio(DEFAULT_SOUND).play()
-	}
+	void new Audio(sound ? sound : DEFAULT_SOUND).play()
 }

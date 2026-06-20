@@ -1,4 +1,3 @@
-import StatusBar from "./status-bar"
 import {
 	BetterPomodoroSettingsTab,
 	DEFAULT_SETTINGS,
@@ -6,15 +5,14 @@ import {
 } from "./settings"
 import { CustomView, PLUGIN_CUSTOM_VIEW_ID } from "./custom-view"
 import { Notice, Plugin, TFile } from "obsidian"
+import StatusBar from "./status-bar"
 import { Timer } from "./timer"
-import { playSound } from "sound"
+import { playSound } from "./sound"
 
 export default class BetterPomodoroPlugin extends Plugin {
 	settings: PluginSettings
 	timer: Timer
-	statusBar: StatusBar
-	// Needed to reflect settings
-	customView: CustomView
+	sb: StatusBar
 
 	async onload() {
 		await this.loadSettings()
@@ -35,12 +33,11 @@ export default class BetterPomodoroPlugin extends Plugin {
 		})
 
 		this.registerView(PLUGIN_CUSTOM_VIEW_ID, (leaf) => {
-			this.customView = new CustomView(leaf, this.timer, this.settings)
-			return this.customView
+			return new CustomView(leaf, this.timer, this.settings)
 		})
 
-		this.statusBar = new StatusBar(this.addStatusBarItem(), this.timer)
-		this.statusBar.alterVisibility(this.settings.showStatusBar)
+		this.sb = new StatusBar(this.addStatusBarItem(), this.timer)
+		this.sb.alterVisibility(this.settings.showStatusBar)
 
 		this.addCommand({
 			id: "toggle",
@@ -81,21 +78,21 @@ export default class BetterPomodoroPlugin extends Plugin {
 		)
 	}
 
-	loadCustomView() {
-		if (this.settings.showCustomView) {
-			var { workspace } = this.app
-			var leaves = workspace.getLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
-			if (!leaves.length) {
-				var leaf = workspace.getRightLeaf(false)
-				void leaf?.setViewState({
-					type: PLUGIN_CUSTOM_VIEW_ID,
-				})
-			}
+	showCustomView() {
+		var { workspace } = this.app
+		var leaves = workspace.getLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
+		if (!leaves.length) {
+			var leaf = workspace.getRightLeaf(false)
+			void leaf?.setViewState({
+				type: PLUGIN_CUSTOM_VIEW_ID,
+				active: true,
+			})
 		}
 	}
 
 	hideCustomView() {
 		var { workspace } = this.app
+		// Detaches all leaves in case more than one was created (by mistake)
 		workspace.detachLeavesOfType(PLUGIN_CUSTOM_VIEW_ID)
 	}
 
@@ -125,6 +122,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 	}
 }
 
+/* eslint-disable */
 function systemNotify(text: string) {
 	var { Notification } = require("electron").remote
 
@@ -133,6 +131,7 @@ function systemNotify(text: string) {
 		body: text,
 	}).show()
 }
+/* eslint-enable */
 
 function obsidianNotify(text: string) {
 	new Notice(text)
