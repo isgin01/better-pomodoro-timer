@@ -2,11 +2,10 @@ import { Menu } from "obsidian"
 import { type Timer } from "./timer"
 
 export default class StatusBar {
-	private element: HTMLElement
-
-	constructor(element: HTMLElement, timer: Timer) {
-		this.element = element
-
+	constructor(
+		private element: HTMLElement,
+		timer: Timer,
+	) {
 		// Make the status bar clickable
 		element.className += " mod-clickable"
 
@@ -30,7 +29,7 @@ export default class StatusBar {
 		})
 
 		let timeUpdateHandler = (HFTime: string) => {
-			element.innerHTML = `<span>${HFTime}</span>`
+			element.innerText = HFTime
 		}
 
 		// Set initial value
@@ -41,10 +40,6 @@ export default class StatusBar {
 	}
 
 	alterVisibility(show: boolean) {
-		if (show) {
-			this.element.style.display = "block"
-		} else {
-			this.element.style.display = "none"
-		}
+		this.element.setCssProps({ display: show ? "block" : "none" })
 	}
 }

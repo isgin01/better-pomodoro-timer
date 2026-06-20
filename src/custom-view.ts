@@ -1,34 +1,29 @@
-import { ItemView, WorkspaceLeaf, setIcon } from "obsidian"
-
+import { ItemView, type WorkspaceLeaf, setIcon } from "obsidian"
+import { type PluginSettings } from "./settings"
 import { type Timer } from "./timer"
-import { PluginSettings } from "settings"
 
-export const PLUGIN_CUSTOM_VIEW_ID = "xxx-pomodoro-view"
+// TODO: does it have to be unique across all plugins?
+export const PLUGIN_CUSTOM_VIEW_ID = "isgin-pomodoro-timer-view"
 
 export class CustomView extends ItemView {
-	private timer: Timer
-	private settings: PluginSettings
-
 	private toggleBtn: HTMLButtonElement
-	private resetBtn: HTMLButtonElement
-	private switchBtn: HTMLButtonElement
 
-	private remainingTimeCircle: SVGCircleElement
 	private elapsedTimeCircle: SVGCircleElement
 
-	constructor(leaf: WorkspaceLeaf, timer: Timer, settings: PluginSettings) {
+	constructor(
+		leaf: WorkspaceLeaf,
+		private timer: Timer,
+		private settings: PluginSettings,
+	) {
 		super(leaf)
 		this.containerEl.empty()
-
-		this.timer = timer
-		this.settings = settings
 
 		// Set view icon
 		this.icon = "timer"
 
 		// Parent container
 		var container = this.containerEl.createDiv({
-			cls: "custom-view-container",
+			cls: "pomodoro-timer-view-container",
 		})
 
 		// Clock face
@@ -38,9 +33,12 @@ export class CustomView extends ItemView {
 				cls: "animation-container",
 			})
 			.createSvg("svg")
-		this.remainingTimeCircle = svg.createSvg("circle", {
-			attr: { id: "default", cx: 70, cy: 70, r: 70, "stroke-width": 2 },
+		let remainingTimeCircle = svg.createSvg("circle", {
+			attr: { cx: 70, cy: 70, r: 70, "stroke-width": 2 },
 		})
+		remainingTimeCircle.style.fill =
+			this.settings.customViewColors.remaining
+
 		this.elapsedTimeCircle = svg.createSvg("circle", {
 			attr: { id: "elapsed", cx: 70, cy: 70, r: 60, "stroke-width": 20 },
 		})
@@ -48,12 +46,14 @@ export class CustomView extends ItemView {
 		svg.createSvg("circle", {
 			attr: { id: "bg", cx: 70, cy: 70, r: 60, "stroke-width": 8 },
 		})
-		this.setColors()
+
+		this.elapsedTimeCircle.style.stroke =
+			this.settings.customViewColors.elapsed
 
 		// TODO: work/break text
 
 		var timeContainer = container.createSpan({ cls: "time-container" })
-		timeContainer.innerHTML = timer.HFTime
+		timeContainer.innerText = timer.HFTime
 		this.timer.registerEventHandler("tick", (HFTime: string) => {
 			timeContainer.innerText = HFTime
 			this.setElapsedCircleReach()
@@ -77,34 +77,23 @@ export class CustomView extends ItemView {
 			this.setToggleBtnIcon()
 		})
 
-		this.resetBtn = btnContainer.createEl("button", {
+		let resetBtn = btnContainer.createEl("button", {
 			text: "Reset",
 			cls: "reset",
 		})
-		setIcon(this.resetBtn, "reset")
-		this.resetBtn.addEventListener("click", () => {
+		setIcon(resetBtn, "reset")
+		resetBtn.addEventListener("click", () => {
 			this.timer.reset()
 		})
 
-		this.switchBtn = btnContainer.createEl("button", {
+		let switchBtn = btnContainer.createEl("button", {
 			text: "Switch",
 			cls: "switch",
 		})
-		setIcon(this.switchBtn, "switch")
-		this.switchBtn.addEventListener("click", () => {
+		setIcon(switchBtn, "switch")
+		switchBtn.addEventListener("click", () => {
 			this.timer.switch()
 		})
-	}
-
-	setColors() {
-		this.remainingTimeCircle.style.fill =
-			this.settings.customViewColors.remaining
-		this.elapsedTimeCircle.style.stroke =
-			this.settings.customViewColors.elapsed
-	}
-
-	private updateModeBanner() {
-		var m = this.timer.mode
 	}
 
 	private setToggleBtnIcon() {
@@ -122,7 +111,7 @@ export class CustomView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Xxx pomodoro view"
+		return "Pomodoro timer view"
 	}
 
 	async onClose() {

@@ -1,4 +1,4 @@
-import { type App, PluginSettingTab, Setting, type HexString } from "obsidian"
+import { type App, type HexString, PluginSettingTab, Setting } from "obsidian"
 import type BetterPomodoroPlugin from "./main"
 import { playSound } from "./sound"
 
@@ -51,7 +51,7 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings()
 
 						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.statusBar.alterVisibility(val)
+							ctx.sb.alterVisibility(val)
 						})
 					})
 			})
@@ -67,7 +67,7 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 						this.plugin.reflectSettingsChange((ctx) => {
 							if (newValue) {
-								ctx.loadCustomView()
+								ctx.showCustomView()
 							} else {
 								ctx.hideCustomView()
 							}
@@ -78,7 +78,7 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		// TODO: render inactive
 
-		new Setting(containerEl).setName("Custom View").setHeading()
+		new Setting(containerEl).setName("Custom view").setHeading()
 
 		new Setting(containerEl)
 			.setName("Color for remaining time")
@@ -92,7 +92,8 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings()
 
 						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.customView.setColors()
+							ctx.hideCustomView()
+							ctx.showCustomView()
 						})
 					})
 			})
@@ -108,7 +109,8 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings()
 
 						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.customView.setColors()
+							ctx.hideCustomView()
+							ctx.showCustomView()
 						})
 					})
 			})
@@ -129,7 +131,8 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings()
 
 						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.customView.setColors()
+							ctx.hideCustomView()
+							ctx.showCustomView()
 						})
 
 						this.display()
@@ -213,8 +216,8 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 			})
 
 		new Setting(containerEl)
-			.setName("Custom Notification Sound")
-			.setDesc("A file inside the vault")
+			.setName("Custom notification sound")
+			.setDesc("A file inside your vault")
 			.addButton((component) => {
 				component.setButtonText("Check audio").onClick(() => {
 					var sound = this.plugin.getFile(
@@ -227,6 +230,7 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 			})
 			.addText((component) => {
 				component
+					.setPlaceholder("Path")
 					.setValue(this.plugin.settings.customNotificationSound)
 					.onChange(async (newValue: string) => {
 						this.plugin.settings.customNotificationSound = newValue

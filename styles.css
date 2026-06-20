@@ -22,7 +22,7 @@
 	fill: var(--background-secondary);
 }
 
-.custom-view-container {
+.pomodoro-timer-view-container {
 	display: flex;
 	flex-direction: column;
 }

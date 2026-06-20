@@ -26,6 +26,9 @@ export default tseslint.config(
 		},
 	},
 	globalIgnores([
+		"jest.config.js",
+		"__tests__",
+		"__mocks__",
 		"node_modules",
 		"dist",
 		"esbuild.config.mjs",
