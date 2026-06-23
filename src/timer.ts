@@ -99,9 +99,10 @@ export class Timer {
 			this.runEventHandlers('elapsed')
 			if (!this.settings.continueAfterTimeHasElapsed) {
 				this.switch()
-				if (this.settings.autostart) {
-					this.toggle()
-				}
+			}
+
+			if (this.settings.autostart) {
+				this.toggle()
 			}
 		}
 	}
