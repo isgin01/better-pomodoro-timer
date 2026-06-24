@@ -1,25 +1,30 @@
 import { type PluginSettings } from 'settings'
 
-// Switch is missing because 'toggle' is sufficient
+// 'Switch' is missing because 'toggle' is sufficient
 // Whenever 'switch' would be triggered, 'reset' would be too
 export type Event = 'tick' | 'elapsed' | 'toggle' | 'reset'
 type Callback = (HFTime?: string) => void
 
-type Mode = 'work' | 'break'
+export type Mode = {
+	name: string
+	secs: number
+}
 
 export type recoverableTimerState = {
 	running: boolean
-	mode: Mode
+	modeIdx: number
 	unmodified: number
 	remaining: number
 }
 
 export class Timer {
 	running: boolean
-	mode: Mode
+	// TODO: remove unmodified because mode is sufficient now
 	unmodified: number
 	remaining: number
 
+	private currentModeIdx: number
+	private modes: Mode[]
 	private eventHandlers: { [key in Event]: Callback[] } = {
 		tick: [],
 		elapsed: [],
@@ -30,31 +35,54 @@ export class Timer {
 
 	constructor(
 		private readonly settings: PluginSettings,
+		modes: Mode[],
 		initialState?: recoverableTimerState,
 	) {
+		// TODO: Remove settings from this class altogether
 		this.settings = settings
+		this.modes = modes
 
-		if (initialState) {
-			this.mode = initialState.mode
-			this.unmodified = initialState.unmodified
-			this.remaining = initialState.remaining
-
-			// Inverse the value to run toggle properly
-			this.running = !initialState.running
-			this.toggle()
+		// TODO: handle situations when no modes list was supplied
+		if (
+			initialState &&
+			!Object.entries(initialState).some(v => v[1] == null) &&
+			// TODO: a temp solution
+			initialState.modeIdx < modes.length
+		) {
+			this.setModes(modes)
+			this.fromInitialState(initialState)
 		} else {
-			this.running = false
-			this.mode = 'work'
-			this.resetSecs()
+			this.setModes(modes)
 		}
 	}
 
-	private resetSecs() {
-		this.unmodified =
-			this.mode == 'work'
-				? this.settings.workSecs
-				: this.settings.breakSecs
+	setModes(modes: Mode[]) {
+		this.updateModes(modes)
+		this.reset()
+	}
 
+	private updateModes(modes: Mode[]) {
+		this.currentModeIdx = 0
+		// Copy the array and objects inside to avoid using references
+		this.modes = Array.from(modes.map(m => ({ ...m })))
+	}
+
+	private fromInitialState(state: recoverableTimerState): void {
+		this.currentModeIdx = state.modeIdx
+		this.unmodified = state.unmodified
+		this.remaining = state.remaining
+
+		// Inverse the value to run toggle properly
+		this.running = !state.running
+		this.toggle()
+	}
+
+	get currentMode(): Mode {
+		return this.modes[this.currentModeIdx]!
+	}
+
+	private resetSecs(): void {
+		this.unmodified = this.currentMode.secs
 		this.remaining = this.unmodified
 	}
 
@@ -79,7 +107,7 @@ export class Timer {
 		// between NodeJS and Browser API
 		this.intervalId = window.setInterval(() => {
 			this.tick()
-			this.elapsed()
+			this.isElapsed()
 		}, 1000)
 	}
 
@@ -94,11 +122,11 @@ export class Timer {
 	}
 
 	// TODO: refactor
-	private elapsed(): void {
-		if (this.remaining == 0) {
+	private isElapsed(): void {
+		if (this.remaining === 0) {
 			this.runEventHandlers('elapsed')
 			if (!this.settings.continueAfterTimeHasElapsed) {
-				this.switch()
+				this.nextMode()
 			}
 
 			if (this.settings.autostart) {
@@ -107,8 +135,10 @@ export class Timer {
 		}
 	}
 
-	switch(): void {
-		this.mode = this.mode == 'work' ? 'break' : 'work'
+	nextMode(): void {
+		// WARNING: length may become zero if sth unexpected happens
+		// TODO: Fix
+		this.currentModeIdx = (this.currentModeIdx + 1) % this.modes.length
 		this.reset()
 	}
 
@@ -119,7 +149,7 @@ export class Timer {
 	}
 
 	private runEventHandlers(ev: Event) {
-		this.eventHandlers[ev].forEach((cb) => cb(this.HFTime))
+		this.eventHandlers[ev].forEach(cb => cb(this.HFTime))
 	}
 
 	get HFTime() {
@@ -140,7 +170,7 @@ export class Timer {
 		const hoursTotal = (minutesTotal - minutesLeft) / 60
 
 		const paddedTimeUnits = [hoursTotal, minutesLeft, secondsLeft].map(
-			(timeUnit) => String(timeUnit).padStart(2, '00'),
+			timeUnit => String(timeUnit).padStart(2, '00'),
 		)
 
 		humanTime += paddedTimeUnits.join(':')
@@ -151,7 +181,7 @@ export class Timer {
 	get recoverableState(): recoverableTimerState {
 		return {
 			running: this.running,
-			mode: this.mode,
+			modeIdx: this.currentModeIdx,
 			unmodified: this.unmodified,
 			remaining: this.remaining,
 		}

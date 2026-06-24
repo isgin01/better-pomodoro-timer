@@ -18,14 +18,14 @@ export default function StatusBarItem(
 
 	let menu = new Menu()
 
-	menu.addItem((i) => {
+	menu.addItem(i => {
 		i.setTitle('Reset').onClick(() => timer.reset())
 	})
-	menu.addItem((i) => {
-		i.setTitle('Switch').onClick(() => timer.switch())
+	menu.addItem(i => {
+		i.setTitle('Switch').onClick(() => timer.nextMode())
 	})
 
-	element.addEventListener('auxclick', (ev) => {
+	element.addEventListener('auxclick', ev => {
 		menu.showAtMouseEvent(ev)
 	})
 

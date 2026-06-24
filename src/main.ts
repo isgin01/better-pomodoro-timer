@@ -22,7 +22,11 @@ export default class BetterPomodoroPlugin extends Plugin {
 
 		// Timer
 
-		this.timer = new Timer(this.settings, this.recoverLastSession())
+		this.timer = new Timer(
+			this.settings,
+			this.settings.modes,
+			this.recoverLastSession(),
+		)
 
 		this.timer.on(['elapsed'], () => {
 			// Settings can get changed during the timer run,
@@ -44,7 +48,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 
 		this.addSettingTab(new BetterPomodoroSettingsTab(this.app, this))
 
-		this.registerView(CUSTOM_VIEW_ID, (leaf) => {
+		this.registerView(CUSTOM_VIEW_ID, leaf => {
 			return new CustomView(leaf, this.timer, this.settings.CvColors)
 		})
 
@@ -90,7 +94,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 			id: 'switch',
 			name: 'Switch',
 			callback: () => {
-				this.timer.switch()
+				this.timer.nextMode()
 			},
 		})
 
@@ -113,7 +117,7 @@ export default class BetterPomodoroPlugin extends Plugin {
 	}
 
 	interactWithCustomView(cb: (view: CustomView) => void) {
-		this.app.workspace.getLeavesOfType(CUSTOM_VIEW_ID).forEach((leaf) => {
+		this.app.workspace.getLeavesOfType(CUSTOM_VIEW_ID).forEach(leaf => {
 			if (leaf.view instanceof CustomView) {
 				cb(leaf.view)
 			}

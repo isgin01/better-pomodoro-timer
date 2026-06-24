@@ -2,11 +2,11 @@ import { type App, PluginSettingTab, Setting } from 'obsidian'
 import type BetterPomodoroPlugin from './main'
 import { playSound } from './sound'
 import { CvColors } from 'custom-view'
-import { alterVisibility } from './utils'
+import { alterVisibility, notify } from './utils'
+import { Mode } from './timer'
 
 export type PluginSettings = {
-	workSecs: number
-	breakSecs: number
+	modes: Mode[]
 	systemNotificationsPreferred: boolean
 	continueAfterTimeHasElapsed: boolean
 	autostart: boolean
@@ -18,8 +18,20 @@ export type PluginSettings = {
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
-	workSecs: 50 * 60,
-	breakSecs: 10 * 60,
+	// Use get to avoid the array from being used as
+	// a reference and overwritten as a result
+	get modes() {
+		return [
+			{ name: 'work', secs: 50 * 60 },
+			{ name: 'break', secs: 10 * 60 },
+			{ name: 'work', secs: 50 * 60 },
+			{ name: 'break', secs: 10 * 60 },
+			{ name: 'work', secs: 50 * 60 },
+			{ name: 'break', secs: 10 * 60 },
+			{ name: 'work', secs: 50 * 60 },
+			{ name: 'long', secs: 20 * 60 },
+		]
+	},
 	systemNotificationsPreferred: false,
 	autostart: false,
 	continueAfterTimeHasElapsed: true,
@@ -32,10 +44,12 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
 export class BetterPomodoroSettingsTab extends PluginSettingTab {
 	private plugin: BetterPomodoroPlugin
+	private settings: PluginSettings
 
 	constructor(app: App, plugin: BetterPomodoroPlugin) {
 		super(app, plugin)
 		this.plugin = plugin
+		this.settings = plugin.settings
 	}
 
 	display(): void {
@@ -47,15 +61,15 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Show status bar')
-			.addToggle((component) => {
+			.addToggle(component => {
 				component
-					.setValue(this.plugin.settings.showStatusBar)
+					.setValue(this.settings.showStatusBar)
 					.onChange(async (val: boolean) => {
-						this.plugin.settings.showStatusBar = val
+						this.settings.showStatusBar = val
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.interactWithStatusBar((el) => {
+						this.plugin.reflectSettingsChange(ctx => {
+							ctx.interactWithStatusBar(el => {
 								alterVisibility(el, val)
 							})
 						})
@@ -64,14 +78,15 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Show custom view')
-			.addToggle((component) => {
+			.addToggle(component => {
 				component
-					.setValue(this.plugin.settings.showCustomView)
+					.setValue(this.settings.showCustomView)
 					.onChange(async (newValue: boolean) => {
-						this.plugin.settings.showCustomView = newValue
+						this.settings.showCustomView = newValue
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange((ctx) => {
+						this.plugin.showCustomView()
+						this.plugin.reflectSettingsChange(ctx => {
 							if (newValue) {
 								ctx.showCustomView()
 							} else {
@@ -91,18 +106,18 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Color for remaining time')
-			.addColorPicker((component) => {
+			.addColorPicker(component => {
 				component
-					.setValue(this.plugin.settings.CvColors.remaining)
-					.setDisabled(!this.plugin.settings.showCustomView)
+					.setValue(this.settings.CvColors.remaining)
+					.setDisabled(!this.settings.showCustomView)
 					.onChange(async (newColor: string) => {
-						this.plugin.settings.CvColors.remaining = newColor
+						this.settings.CvColors.remaining = newColor
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.interactWithCustomView((view) =>
+						this.plugin.reflectSettingsChange(ctx => {
+							ctx.interactWithCustomView(view =>
 								view.setRemainingCircleColor(
-									this.plugin.settings.CvColors.remaining,
+									this.settings.CvColors.remaining,
 								),
 							)
 						})
@@ -111,18 +126,18 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Color for elapsed time')
-			.addColorPicker((component) => {
+			.addColorPicker(component => {
 				component
-					.setValue(this.plugin.settings.CvColors.elapsed)
-					.setDisabled(!this.plugin.settings.showCustomView)
+					.setValue(this.settings.CvColors.elapsed)
+					.setDisabled(!this.settings.showCustomView)
 					.onChange(async (newColor: string) => {
-						this.plugin.settings.CvColors.elapsed = newColor
+						this.settings.CvColors.elapsed = newColor
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.interactWithCustomView((view) =>
+						this.plugin.reflectSettingsChange(ctx => {
+							ctx.interactWithCustomView(view =>
 								view.setElapsedCircleColor(
-									this.plugin.settings.CvColors.elapsed,
+									this.settings.CvColors.elapsed,
 								),
 							)
 						})
@@ -131,26 +146,26 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Reset colors')
-			.addButton((component) => {
+			.addButton(component => {
 				component
 					.setButtonText('Reset')
-					.setDisabled(!this.plugin.settings.showCustomView)
+					.setDisabled(!this.settings.showCustomView)
 					.onClick(async () => {
-						this.plugin.settings.CvColors.elapsed =
+						this.settings.CvColors.elapsed =
 							DEFAULT_SETTINGS.CvColors.elapsed
 
-						this.plugin.settings.CvColors.remaining =
+						this.settings.CvColors.remaining =
 							DEFAULT_SETTINGS.CvColors.remaining
 
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange((ctx) => {
-							ctx.interactWithCustomView((view) => {
+						this.plugin.reflectSettingsChange(ctx => {
+							ctx.interactWithCustomView(view => {
 								view.setRemainingCircleColor(
-									this.plugin.settings.CvColors.remaining,
+									this.settings.CvColors.remaining,
 								)
 								view.setElapsedCircleColor(
-									this.plugin.settings.CvColors.elapsed,
+									this.settings.CvColors.elapsed,
 								)
 							})
 						})
@@ -161,51 +176,14 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl).setName('Timer').setHeading()
 
-		new Setting(containerEl).setName('Work duration').addText((text) => {
-			text.setPlaceholder('Enter time in minutes')
-				.setValue(String(this.plugin.settings.workSecs / 60))
-				.onChange(async (i: string) => {
-					let minutes = validateNumericInput(i)
-					if (minutes) {
-						this.plugin.settings.workSecs = minutes * 60
-						await this.plugin.saveSettings()
-
-						this.plugin.reflectSettingsChange((ctx) => {
-							if (!ctx.timer.running) {
-								ctx.timer.reset()
-							}
-						})
-					}
-				})
-		})
-
-		new Setting(containerEl).setName('Break duration').addText((text) => {
-			text.setPlaceholder('Enter time in minutes')
-				.setValue(String(this.plugin.settings.breakSecs / 60))
-				.onChange(async (i: string) => {
-					let minutes = validateNumericInput(i)
-					if (minutes) {
-						this.plugin.settings.breakSecs = minutes * 60
-						await this.plugin.saveSettings()
-
-						this.plugin.reflectSettingsChange((ctx) => {
-							if (!ctx.timer.running) {
-								ctx.timer.reset()
-							}
-						})
-					}
-				})
-		})
-
 		new Setting(containerEl)
 			.setName('Continue running after time has elapsed')
-			.addToggle((component) => {
+			.addToggle(component => {
 				component
-					.setValue(this.plugin.settings.continueAfterTimeHasElapsed)
-					.setDisabled(this.plugin.settings.autostart)
+					.setValue(this.settings.continueAfterTimeHasElapsed)
+					.setDisabled(this.settings.autostart)
 					.onChange((newValue: boolean) => {
-						this.plugin.settings.continueAfterTimeHasElapsed =
-							newValue
+						this.settings.continueAfterTimeHasElapsed = newValue
 						void this.plugin.saveSettings()
 						this.display()
 					})
@@ -213,14 +191,12 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Autostart after timer has elapsed')
-			.addToggle((component) => {
+			.addToggle(component => {
 				component
-					.setValue(this.plugin.settings.autostart)
-					.setDisabled(
-						this.plugin.settings.continueAfterTimeHasElapsed,
-					)
+					.setValue(this.settings.autostart)
+					.setDisabled(this.settings.continueAfterTimeHasElapsed)
 					.onChange((value: boolean) => {
-						this.plugin.settings.autostart = value
+						this.settings.autostart = value
 						void this.plugin.saveSettings()
 						this.display()
 					})
@@ -230,24 +206,22 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Prefer system notification')
-			.addToggle((component) => {
+			.addToggle(component => {
 				component
-					.setValue(this.plugin.settings.systemNotificationsPreferred)
+					.setValue(this.settings.systemNotificationsPreferred)
 					.onChange(async (newValue: boolean) => {
-						this.plugin.settings.systemNotificationsPreferred =
-							newValue
+						this.settings.systemNotificationsPreferred = newValue
 						await this.plugin.saveSettings()
 					})
 			})
 
 		new Setting(containerEl)
 			.setName('Play notification sound')
-			.addToggle((component) => {
+			.addToggle(component => {
 				component
-					.setValue(this.plugin.settings.systemNotificationsPreferred)
+					.setValue(this.settings.systemNotificationsPreferred)
 					.onChange(async (newValue: boolean) => {
-						this.plugin.settings.systemNotificationsPreferred =
-							newValue
+						this.settings.systemNotificationsPreferred = newValue
 						await this.plugin.saveSettings()
 					})
 			})
@@ -255,10 +229,10 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Custom notification sound')
 			.setDesc('A file inside your vault')
-			.addButton((component) => {
+			.addButton(component => {
 				component.setButtonText('Check audio').onClick(() => {
 					var sound = this.plugin.getFile(
-						this.plugin.settings.customNotificationSound,
+						this.settings.customNotificationSound,
 					)
 
 					// avoid playing the default sound
@@ -267,14 +241,111 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 					}
 				})
 			})
-			.addText((component) => {
+			.addText(component => {
 				component
 					.setPlaceholder('Path')
-					.setValue(this.plugin.settings.customNotificationSound)
-					.onChange(async (newValue: string) => {
-						this.plugin.settings.customNotificationSound = newValue
+					.setValue(this.settings.customNotificationSound)
+					.onChange(async s => {
+						this.settings.customNotificationSound = s
 						await this.plugin.saveSettings()
 					})
+			})
+
+		new Setting(containerEl).setName('Modes').setHeading()
+
+		// Define the var outside scopes in order to use it in the saving cb
+		let tempValue = this.settings.modes.map(m => m.name).join(',')
+		new Setting(containerEl)
+			.setName('Mode sequence')
+			.setDesc('Manage duration below after saving')
+			.addTextArea(component => {
+				component
+					.setPlaceholder('work,break,work,break,long')
+					.setValue(tempValue)
+					.onChange(s => {
+						tempValue = s
+					})
+			})
+			.addButton(component => {
+				component.setButtonText('Save').onClick(() => {
+					let modeNames = tempValue
+						.split(',')
+						.map(s => s.trim().toLowerCase())
+						.filter(v => v.length > 0)
+
+					if (modeNames.length > 0) {
+						this.settings.modes = modeNames.map(s => {
+							let duration = this.settings.modes.find(
+								m => m.name === s,
+							)
+							return {
+								name: s,
+								secs: duration ? duration.secs : 0,
+							}
+						})
+						this.plugin.saveSettings()
+						this.plugin.timer.setModes(this.settings.modes)
+						this.display()
+					} else {
+						notify(
+							this.settings.systemNotificationsPreferred,
+							'Malformed input; unsaved',
+						)
+					}
+				})
+			})
+
+		this.settings.modes
+			// Filter out non-unique values
+			// TODO: provide better names?
+			.filter(
+				(val1, idx, arr) =>
+					arr.findIndex(val2 => val2.name == val1.name) == idx,
+			)
+			.forEach(m1 => {
+				new Setting(containerEl)
+					.setName(
+						// Capitalize
+						`${m1.name.charAt(0).toUpperCase() + m1.name.slice(1)} duration`,
+					)
+					.addText(text => {
+						text.setPlaceholder('Enter time in minutes')
+							.setValue(String(m1.secs / 60))
+							.onChange(async (i: string) => {
+								let minutes = validateNumericInput(i)
+								if (minutes) {
+									let secs = minutes * 60
+
+									// Find each mode with this name and change its seconds count
+									this.settings.modes.map(m2 => {
+										return m2.name == m1.name
+											? (m2.secs = secs)
+											: m1.secs
+									})
+
+									await this.plugin.saveSettings()
+
+									if (!this.plugin.timer.running) {
+										this.plugin.timer.reset()
+									}
+								}
+							})
+					})
+			})
+
+		new Setting(containerEl)
+			.setName('Reset mode settings')
+			.setDesc(
+				`Be careful because using this button would reset all your preferences related
+				to modes to default values`,
+			)
+			.addButton(component => {
+				component.setButtonText('Reset').onClick(() => {
+					this.settings.modes = DEFAULT_SETTINGS.modes
+					this.plugin.saveSettings()
+					this.plugin.timer.setModes(this.settings.modes)
+					this.display()
+				})
 			})
 	}
 }
