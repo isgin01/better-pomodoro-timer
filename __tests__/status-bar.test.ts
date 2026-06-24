@@ -7,41 +7,37 @@ class FakeStatusBar extends HTMLElement {
 		super()
 	}
 
-	setCssProps() {}
+	setCssProps() { }
 }
 
 jest.useFakeTimers()
 
 window.customElements.define('fake-status-bar', FakeStatusBar)
 
-it('initialization', () => {
-	let settings = { ...DEFAULT_SETTINGS }
-	settings.workSecs = 40 * 60
+var settings = { ...DEFAULT_SETTINGS }
 
-	var timer = new Timer(settings)
+it('initialization', () => {
+	var timer = new Timer(settings, settings.modes)
 	var element = new FakeStatusBar()
 	buildStatusBarElement(element, timer, true)
 
 	expect(element.innerHTML).toBe('')
-	expect(element.innerText).toBe('00:40:00')
+	expect(element.innerText).toBe('00:50:00')
 
 	timer.toggle()
-	expect(timer.mode).toBe('work')
+	expect(timer.currentMode.name).toBe('work')
 	expect(timer.running).toBe(true)
 
 	jest.advanceTimersByTime(1000 * 60)
-	expect(element.innerText).toBe('00:39:00')
-	jest.advanceTimersByTime(1000 * 60 * 39)
+	expect(element.innerText).toBe('00:49:00')
+	jest.advanceTimersByTime(1000 * 60 * 49)
 	expect(element.innerText).toBe('00:00:00')
 	jest.advanceTimersByTime(1000 * 60 * 10)
 	expect(element.innerText).toBe('-00:10:00')
 })
 
 it('clicks', () => {
-	let settings = { ...DEFAULT_SETTINGS }
-	settings.workSecs = 40 * 60
-
-	var timer = new Timer(settings)
+	var timer = new Timer(settings, settings.modes)
 	var element = new FakeStatusBar()
 
 	buildStatusBarElement(element, timer, true)

@@ -6,12 +6,22 @@ import { PluginSettings } from '../src/settings'
 
 jest.useFakeTimers()
 
+var standardModes = [
+	{
+		name: 'work',
+		secs: 60 * 60,
+	},
+	{
+		name: 'break',
+		secs: 60 * 10,
+	},
+]
+
 function getSettingsHelper(
 	paramsNecessaryToRunSuccessfully?: Partial<PluginSettings>,
 ): PluginSettings {
 	let empty_settings: PluginSettings = {
-		workSecs: 0,
-		breakSecs: 0,
+		modes: new Array(),
 		systemNotificationsPreferred: false,
 		continueAfterTimeHasElapsed: false,
 		showCustomView: false,
@@ -29,7 +39,7 @@ function getSettingsHelper(
 }
 
 test('toggle', () => {
-	var timer = new Timer(getSettingsHelper())
+	var timer = new Timer(getSettingsHelper(), standardModes)
 	expect(timer.running).toBe(false)
 	timer.toggle()
 	expect(timer.running).toBe(true)
@@ -38,21 +48,21 @@ test('toggle', () => {
 })
 
 test('switch', () => {
-	var timer = new Timer(
-		getSettingsHelper({
-			workSecs: 60 * 60,
-			breakSecs: 60 * 10,
-		}),
-	)
+	var timer = new Timer(getSettingsHelper(), standardModes)
 
 	expect(timer.HFTime).toBe('01:00:00')
-	timer.switch()
+	expect(timer.currentMode.name).toBe('work')
+	timer.nextMode()
 	expect(timer.HFTime).toBe('00:10:00')
+	expect(timer.currentMode.name).toBe('break')
 })
 
 test('event handler func called correct amount of times', () => {
 	var timer = new Timer(
-		getSettingsHelper({ continueAfterTimeHasElapsed: true }),
+		getSettingsHelper({
+			continueAfterTimeHasElapsed: true,
+		}),
+		standardModes,
 	)
 
 	let cb = jest.fn()
@@ -76,9 +86,14 @@ test('event handler func called correct amount of times', () => {
 test('HF time display', () => {
 	var timer = new Timer(
 		getSettingsHelper({
-			workSecs: 60 * 60 * 24,
 			continueAfterTimeHasElapsed: true,
 		}),
+		[
+			{
+				name: 'work',
+				secs: 60 * 60 * 24,
+			},
+		],
 	)
 
 	expect(timer.HFTime).toBe('24:00:00')
@@ -109,15 +124,19 @@ test('HF time display', () => {
 
 describe('create an instance of Timer from initial state', () => {
 	var recoverableState: RecoverableTimerState = {
-		mode: 'work' as const,
+		modeIdx: 1,
 		unmodified: 10,
 		remaining: 5,
 		running: true,
 	}
 
 	test('initialization', () => {
-		var timer = new Timer(getSettingsHelper(), recoverableState)
-		expect(timer.mode).toBe('work')
+		var timer = new Timer(
+			getSettingsHelper(),
+			standardModes,
+			recoverableState,
+		)
+		expect(timer.currentMode.name).toBe('break')
 		expect(timer.unmodified).toBe(10)
 		expect(timer.remaining).toBe(5)
 		expect(timer.running).toBe(true)
@@ -125,25 +144,30 @@ describe('create an instance of Timer from initial state', () => {
 
 	test('running: true', () => {
 		recoverableState.running = true
-		var timer = new Timer(getSettingsHelper(), recoverableState)
-
-		jest.advanceTimersByTime(1000)
-		expect(timer.remaining).toBe(4)
+		var timer = new Timer(
+			getSettingsHelper(),
+			standardModes,
+			recoverableState,
+		)
 
 		let testCb = jest.fn()
 		timer.on(['tick'], testCb)
 		jest.advanceTimersByTime(1000)
 		expect(testCb).toHaveBeenCalledTimes(1)
-		expect(timer.remaining).toBe(3)
+		expect(timer.remaining).toBe(4)
 
 		jest.advanceTimersByTime(1000)
 		expect(testCb).toHaveBeenCalledTimes(2)
-		expect(timer.remaining).toBe(2)
+		expect(timer.remaining).toBe(3)
 	})
 
 	test('running: false', () => {
 		recoverableState.running = false
-		var timer = new Timer(getSettingsHelper(), recoverableState)
+		var timer = new Timer(
+			getSettingsHelper(),
+			standardModes,
+			recoverableState,
+		)
 		jest.advanceTimersByTime(1000)
 		expect(timer.remaining).toBe(5)
 	})
@@ -152,14 +176,16 @@ describe('create an instance of Timer from initial state', () => {
 test('recoverable session state obtaining', () => {
 	var timer = new Timer(
 		getSettingsHelper({
-			workSecs: 60,
-			breakSecs: 10,
 			continueAfterTimeHasElapsed: true,
 		}),
+		[
+			{ name: 'work', secs: 60 },
+			{ name: 'break', secs: 60 },
+		],
 	)
 
 	expect(timer.recoverableState).toStrictEqual<RecoverableTimerState>({
-		mode: 'work',
+		modeIdx: 0,
 		running: false,
 		unmodified: 60,
 		remaining: 60,
@@ -168,7 +194,7 @@ test('recoverable session state obtaining', () => {
 	timer.toggle()
 
 	expect(timer.recoverableState).toStrictEqual<RecoverableTimerState>({
-		mode: 'work',
+		modeIdx: 0,
 		running: true,
 		unmodified: 60,
 		remaining: 60,
@@ -189,33 +215,31 @@ test('recoverable session state obtaining', () => {
 	timer.toggle()
 
 	expect(timer.recoverableState).toStrictEqual<RecoverableTimerState>({
-		mode: 'work',
+		modeIdx: 0,
 		running: false,
 		unmodified: 60,
 		remaining: -1,
 	})
 
-	timer.switch()
+	timer.nextMode()
 
 	expect(timer.recoverableState).toStrictEqual<RecoverableTimerState>({
-		mode: 'break',
+		modeIdx: 1,
 		running: false,
-		unmodified: 10,
-		remaining: 10,
+		unmodified: 60,
+		remaining: 60,
 	})
 })
 
 test('autostart', () => {
-	var timer = new Timer(
-		getSettingsHelper({ autostart: true, workSecs: 5, breakSecs: 10 }),
-	)
+	var timer = new Timer(getSettingsHelper({ autostart: true }), standardModes)
 
-	expect(timer.mode).toBe('work')
+	expect(timer.currentMode.name).toBe('work')
 	timer.toggle()
-	jest.advanceTimersByTime(1000 * 5)
+	jest.advanceTimersByTime(1000 * 60 * 60)
 
-	expect(timer.mode).toBe('break')
+	expect(timer.currentMode.name).toBe('break')
 	expect(timer.running).toBe(true)
-	jest.advanceTimersByTime(1000 * 3)
-	expect(timer.remaining).toBe(7)
+	jest.advanceTimersByTime(1000 * 60 * 9)
+	expect(timer.remaining).toBe(60)
 })

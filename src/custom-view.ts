@@ -101,7 +101,7 @@ export class CustomView extends ItemView {
 		})
 		setIcon(switchBtn, 'switch')
 		switchBtn.addEventListener('click', () => {
-			this.timer.switch()
+			this.timer.nextMode()
 		})
 	}
 
