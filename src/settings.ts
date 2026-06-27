@@ -68,10 +68,8 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						this.settings.showStatusBar = val
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange(ctx => {
-							ctx.interactWithStatusBar(el => {
-								alterVisibility(el, val)
-							})
+						this.plugin.interactWithStatusBar(el => {
+							alterVisibility(el, val)
 						})
 					})
 			})
@@ -85,15 +83,12 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						this.settings.showCustomView = newValue
 						await this.plugin.saveSettings()
 
-						this.plugin.showCustomView()
-						this.plugin.reflectSettingsChange(ctx => {
-							if (newValue) {
-								ctx.showCustomView()
-							} else {
-								ctx.hideCustomView()
-							}
-							this.display()
-						})
+						if (newValue) {
+							this.plugin.showCustomView()
+						} else {
+							this.plugin.hideCustomView()
+						}
+						this.display()
 					})
 			})
 
@@ -114,13 +109,11 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						this.settings.CvColors.remaining = newColor
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange(ctx => {
-							ctx.interactWithCustomView(view =>
-								view.setRemainingCircleColor(
-									this.settings.CvColors.remaining,
-								),
-							)
-						})
+						this.plugin.interactWithCustomView(view =>
+							view.setRemainingCircleColor(
+								this.settings.CvColors.remaining,
+							),
+						)
 					})
 			})
 
@@ -134,13 +127,11 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 						this.settings.CvColors.elapsed = newColor
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange(ctx => {
-							ctx.interactWithCustomView(view =>
-								view.setElapsedCircleColor(
-									this.settings.CvColors.elapsed,
-								),
-							)
-						})
+						this.plugin.interactWithCustomView(view =>
+							view.setElapsedCircleColor(
+								this.settings.CvColors.elapsed,
+							),
+						)
 					})
 			})
 
@@ -159,15 +150,13 @@ export class BetterPomodoroSettingsTab extends PluginSettingTab {
 
 						await this.plugin.saveSettings()
 
-						this.plugin.reflectSettingsChange(ctx => {
-							ctx.interactWithCustomView(view => {
-								view.setRemainingCircleColor(
-									this.settings.CvColors.remaining,
-								)
-								view.setElapsedCircleColor(
-									this.settings.CvColors.elapsed,
-								)
-							})
+						this.plugin.interactWithCustomView(view => {
+							view.setRemainingCircleColor(
+								this.settings.CvColors.remaining,
+							)
+							view.setElapsedCircleColor(
+								this.settings.CvColors.elapsed,
+							)
 						})
 
 						this.display()
