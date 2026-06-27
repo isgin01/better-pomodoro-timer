@@ -107,10 +107,6 @@ export default class BetterPomodoroPlugin extends Plugin {
 		})
 	}
 
-	reflectSettingsChange(cb: (ctx: BetterPomodoroPlugin) => void) {
-		cb(this)
-	}
-
 	interactWithStatusBar(cb: (statusBarElement: HTMLElement) => void): void {
 		// It is easier to simply use a saved reference to the element in this case
 		cb(this.statusBarItem)
