@@ -2,8 +2,8 @@
 	"id": "ultimate-pomodoro-timer",
 	"name": "Ultimate Pomodoro Timer",
 	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Manage your time without friction",
+	"minAppVersion": "1.8.7",
+	"description": "Manage your time without friction.",
 	"author": "isgin01",
 	"authorUrl": "https://github.com/isgin01",
 	"isDesktopOnly": false
