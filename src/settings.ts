@@ -23,16 +23,15 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	// TODO: is it really needed?
 	// Use get to avoid the array from being used as a reference
 	get modes() {
-		return [
-			{ name: 'work', secs: 50 * 60 },
-			{ name: 'break', secs: 10 * 60 },
-			{ name: 'work', secs: 50 * 60 },
-			{ name: 'break', secs: 10 * 60 },
-			{ name: 'work', secs: 50 * 60 },
-			{ name: 'break', secs: 10 * 60 },
-			{ name: 'work', secs: 50 * 60 },
-			{ name: 'long', secs: 20 * 60 },
-		]
+		let work = { name: 'work', secs: 50 * 60, message: 'Work is over' }
+		let _break = { name: 'break', secs: 10 * 60, message: 'Break is over' }
+		let long = {
+			name: 'long',
+			secs: 20 * 60,
+			message: 'Long break is over',
+		}
+
+		return [work, _break, work, _break, work, _break, work, long]
 	},
 	systemNotificationPreferred: false,
 	autostart: false,
@@ -243,6 +242,22 @@ export class PomodoroSettingsTab extends PluginSettingTab {
 					})
 			})
 
+		new Setting(containerEl)
+			.setName('Check notification')
+			.addButton(component => {
+				component.setButtonText('Click').onClick(() => {
+					notify(this.settings.systemNotificationPreferred, '!')
+
+					if (this.settings.playNotificationSound) {
+						playSound(
+							this.plugin.getFile(
+								this.settings.notificationSoundPath,
+							),
+						)
+					}
+				})
+			})
+
 		new Setting(containerEl).setName('Modes').setHeading()
 
 		// Define a variable outside the setting scope in order to use it in the saving cb
@@ -275,6 +290,7 @@ export class PomodoroSettingsTab extends PluginSettingTab {
 							return {
 								name: s,
 								secs: existing ? existing.secs : 0,
+								message: existing ? existing.message : '',
 							}
 						})
 						void this.plugin.saveSettings()
@@ -298,25 +314,28 @@ export class PomodoroSettingsTab extends PluginSettingTab {
 							firstEncountered.name == current.name,
 					) == idx,
 			)
-			.forEach(m1 => {
+			.forEach(modeBeingChanged => {
 				new Setting(containerEl)
 					.setName(
 						// Capitalize
-						`${m1.name.charAt(0).toUpperCase() + m1.name.slice(1)} duration`,
+						`${modeBeingChanged.name.charAt(0).toUpperCase() + modeBeingChanged.name.slice(1)}`,
 					)
 					.addText(text => {
 						text.setPlaceholder('Enter time in minutes')
-							.setValue(String(m1.secs / 60))
+							.setValue(String(modeBeingChanged.secs / 60))
 							.onChange(async (i: string) => {
 								let minutes = isProperNumber(i)
 								if (minutes) {
 									let secs = minutes * 60
 
 									// Find modes with such name and change their seconds count
-									this.settings.modes.map(m2 => {
-										return m2.name == m1.name
-											? (m2.secs = secs)
-											: m1.secs
+									this.settings.modes.forEach(savedMode => {
+										if (
+											savedMode.name ===
+											modeBeingChanged.name
+										) {
+											savedMode.secs = secs
+										}
 									})
 
 									await this.plugin.saveSettings()
@@ -324,6 +343,20 @@ export class PomodoroSettingsTab extends PluginSettingTab {
 										this.settings.modes,
 									)
 								}
+							})
+					})
+					.addText(text => {
+						text.setPlaceholder('Enter notification message')
+							.setValue(modeBeingChanged.message)
+							.onChange(async message => {
+								this.settings.modes.map(mode => {
+									return mode.name == modeBeingChanged.name
+										? (mode.message = message)
+										: mode
+								})
+
+								await this.plugin.saveSettings()
+								this.plugin.timer.setModes(this.settings.modes)
 							})
 					})
 			})

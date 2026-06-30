@@ -32,7 +32,7 @@ export default class PomodoroPlugin extends Plugin {
 			// TODO: Custom message template
 			notify(
 				this.settings.systemNotificationPreferred,
-				'Time has elapsed',
+				this.timer.currentMode.message,
 			)
 			// Settings can get changed during the timer run,
 			// so it's important to check

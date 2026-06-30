@@ -57,8 +57,6 @@ export class CustomView extends ItemView {
 			attr: { class: 'bg', cx: 80, cy: 85, r: 70 },
 		})
 
-		// TODO: work/break text
-
 		var modeContainer = container.createSpan({ cls: 'mode-container' })
 		modeContainer.innerText = timer.currentMode.name
 

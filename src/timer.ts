@@ -5,6 +5,8 @@ export type Event = 'tick' | 'elapsed' | 'toggle' | 'reset'
 export type Mode = {
 	name: string
 	secs: number
+	// TODO: this shouldn't be here, should it?
+	message: string
 }
 
 export type recoverableTimerState = {
